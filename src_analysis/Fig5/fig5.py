@@ -33,7 +33,7 @@ from matplotlib.patches import Patch
 from PIL import Image          # only needed for PDF→image fallback
 
 # ── FILE PATHS ────────────────────────────────────────────────────────────────
-DNA_REPLICATION_ONLY  = '/home/adrien/2026Replication/Replication/100_cycles/Same_cycle_length/id_and_type.dat'
+# DNA_REPLICATION_ONLY  = '/home/adrien/2026Replication/Replication/100_cycles/Same_cycle_length/id_and_type.dat'
 CELL_CYCLE_TYPES      = '/home/adrien/18-04DeltaKReplication03.5/0_swi6/LowReactionsMitosis/LowNoise/p2-2.5/types1.dat'
 CELL_CYCLE_RG         = '/home/adrien/18-04DeltaKReplication03.5/0_swi6/LowReactionsMitosis/LowNoise/p2-2.5/r2.dat'
 CELL_CYCLE_TIMELINE   = '/home/adrien/18-04DeltaKReplication03.5/0_swi6/LowReactionsMitosis/LowNoise/p2-2.5/replication_timeline.dat'
@@ -95,7 +95,7 @@ PRX_RC = {
 plt.rcParams.update(PRX_RC)
 
 A4_WIDTH  = 7.5
-A4_HEIGHT = 6
+A4_HEIGHT = 5
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -312,7 +312,7 @@ def cell_cycle_model(ax):
         x = 0.8 * np.cos(np.deg2rad(mid))
         y = 0.8 * np.sin(np.deg2rad(mid))
         if phase == 'G1':
-            ax.text(x-0.4, y, PHASE_STYLES[phase]["label"], ha="center", va="center",
+            ax.text(x-0.4, y+0.2, PHASE_STYLES[phase]["label"], ha="center", va="center",
         bbox=dict(facecolor='white', alpha=0.6,boxstyle="round,pad=0.4"),fontsize=PRX_RC["axes.labelsize"]-1)
         else: 
             ax.text(x, y, PHASE_STYLES[phase]["label"], ha="center", va="center",
@@ -455,11 +455,11 @@ def label_ax(ax, letter, x=-0.10, y=1.02):
 
 def make_figure(zoom_start, zoom_end, outfile=None):
 
-    # ── Load DNA-replication kymograph (full sim) ──────────────────────────
-    print("Loading DNA-replication dump …")
-    dna_ts, dna_frames = parse_dump(DNA_REPLICATION_ONLY)
-    dna_ids, dna_arrays = build_arrays(dna_frames, CC_POLYMERS)
-    print(f"  -> {len(dna_ts)} frames, {dna_ts[0]}–{dna_ts[-1]}")
+    # # ── Load DNA-replication kymograph (full sim) ──────────────────────────
+    # print("Loading DNA-replication dump …")
+    # dna_ts, dna_frames = parse_dump(DNA_REPLICATION_ONLY)
+    # dna_ids, dna_arrays = build_arrays(dna_frames, CC_POLYMERS)
+    # print(f"  -> {len(dna_ts)} frames, {dna_ts[0]}–{dna_ts[-1]}")
 
     # ── Load cell-cycle dump (full sim, then mask to window) ───────────────
     print("Loading cell-cycle dump …")
@@ -482,8 +482,8 @@ def make_figure(zoom_start, zoom_end, outfile=None):
     print(f"  -> {mask.sum()} frames in zoom window")
 
     # ── Load model images ──────────────────────────────────────────────────
-    img_dna = load_pdf_as_image(DNA_REP_MODEL)
-    img_cc  = load_pdf_as_image(CELL_CYCLE_MODEL)
+    # img_dna = load_pdf_as_image(DNA_REP_MODEL)
+    # img_cc  = load_pdf_as_image(CELL_CYCLE_MODEL)
 
     # ══════════════════════════════════════════════════════════════════════
     # BUILD FIGURE
@@ -494,49 +494,49 @@ def make_figure(zoom_start, zoom_end, outfile=None):
     fig = plt.figure(figsize=(A4_WIDTH, A4_HEIGHT))
 
     outer = gridspec.GridSpec(
-        3, 2,
+        2, 2,
         figure=fig,
-        height_ratios=[1.4, 1.4, 2.2],   # DNA kymo/model | CC kymo/model | zoom
-        hspace=0.24,
+        height_ratios=[1.4, 2.2],   # DNA kymo/model | CC kymo/model | zoom
+        hspace=0.3,
         wspace=0.02,
     )
 
-    # ── (a) DNA replication kymograph ─────────────────────────────────────
-    ax_a = fig.add_subplot(outer[0, 0])
+    # # ── (a) DNA replication kymograph ─────────────────────────────────────
+    # ax_a = fig.add_subplot(outer[0, 0])
     
-    draw_kymograph(ax_a, dna_ts, dna_arrays, dna_ids,
-                   ylabel="Nucleosome\nposition")
-    ax_a.set_xticks([1001000,90e7])
-    ax_a.set_xlim(1001000,961193000)
-    ax_a.set_xticklabels([])
-    # ax_a.set_title("DNA replication kymograph", fontsize=PRX_RC["axes.titlesize"])
-    label_ax(ax_a, "a)")
+    # draw_kymograph(ax_a, dna_ts, dna_arrays, dna_ids,
+    #                ylabel="Nucleosome\nposition")
+    # ax_a.set_xticks([1001000,90e7])
+    # ax_a.set_xlim(1001000,961193000)
+    # ax_a.set_xticklabels([])
+    # # ax_a.set_title("DNA replication kymograph", fontsize=PRX_RC["axes.titlesize"])
+    # label_ax(ax_a, "a)")
 
-    # ── (b) DNA replication model ──────────────────────────────────────────
-    ax_b = fig.add_subplot(outer[0, 1])
-    dna_rep_model(ax_b)
-    # if img_dna is not None:
-    #     ax_b.imshow(img_dna)
-    # else:
-    #     ax_b.text(0.5, 0.5, "DNA rep model\n(PDF not loaded)",
-    #               ha="center", va="center", transform=ax_b.transAxes)
-    ax_b.axis("off")
-    # ax_b.set_title("DNA replication model", fontsize=PRX_RC["axes.titlesize"])
-    label_ax(ax_b, "b)")
+    # # ── (b) DNA replication model ──────────────────────────────────────────
+    # ax_b = fig.add_subplot(outer[0, 1])
+    # dna_rep_model(ax_b)
+    # # if img_dna is not None:
+    # #     ax_b.imshow(img_dna)
+    # # else:
+    # #     ax_b.text(0.5, 0.5, "DNA rep model\n(PDF not loaded)",
+    # #               ha="center", va="center", transform=ax_b.transAxes)
+    # ax_b.axis("off")
+    # # ax_b.set_title("DNA replication model", fontsize=PRX_RC["axes.titlesize"])
+    # label_ax(ax_b, "b)")
 
     # ── (c) Cell-cycle kymograph (full sim) ───────────────────────────────
-    ax_c = fig.add_subplot(outer[1, 0])
+    ax_c = fig.add_subplot(outer[0, 0])
     draw_kymograph(ax_c, cc_ts, cc_arrays, cc_ids,
                    ylabel="Nucleosome\nposition")
     ax_c.set_xticks([1001000,60e7, 90e7])
     ax_c.set_xticklabels(['0','6', rf'$9 \times 10^5$'])
     ax_c.set_xlim(1001000,961193000)
     ax_c.vlines([zoom_start,zoom_end],1,80,colors='white',linestyles='--')
-    # ax_c.set_title("Cell-cycle kymograph", fontsize=PRX_RC["axes.titlesize"])
-    label_ax(ax_c, "c)")
+    ax_c.set_title("100 cell cycles", fontsize=PRX_RC["axes.titlesize"])
+    label_ax(ax_c, "(a)")
 
     # ── (d) Cell-cycle model ───────────────────────────────────────────────
-    ax_d = fig.add_subplot(outer[1, 1])
+    ax_d = fig.add_subplot(outer[0, 1])
     cell_cycle_model(ax_d)
     # if img_cc is not None:
     #     ax_d.imshow(img_cc[10:-10,10:-10])
@@ -545,12 +545,12 @@ def make_figure(zoom_start, zoom_end, outfile=None):
     #               ha="center", va="center", transform=ax_d.transAxes)
     ax_d.axis("off")
     # ax_d.set_title("Cell-cycle model", fontsize=PRX_RC["axes.titlesize"])
-    label_ax(ax_d, "d)")
+    label_ax(ax_d, "(b)")
 
     # ── (e) Zoom strip — 4 sub-panels sharing x, spanning both columns ────
     zoom_gs = gridspec.GridSpecFromSubplotSpec(
         4, 1,
-        subplot_spec=outer[2, :],          # span both columns
+        subplot_spec=outer[1, :],          # span both columns
         height_ratios=[0.35, 1.0, 1.0, 1.0],
         hspace=0.08,
     )
@@ -560,7 +560,7 @@ def make_figure(zoom_start, zoom_end, outfile=None):
     ax_sw  = fig.add_subplot(zoom_gs[2], sharex=ax_tl)   # Swi6M
     ax_rg  = fig.add_subplot(zoom_gs[3], sharex=ax_tl)   # Rg
 
-    label_ax(ax_tl, "e)")
+    label_ax(ax_tl, "(c)")
 
     # Hide x-tick labels on all but the bottom zoom panel
     for ax in (ax_tl, ax_cnt, ax_sw):
@@ -589,6 +589,9 @@ def make_figure(zoom_start, zoom_end, outfile=None):
                        color= "#222222")
         if b['phase'] == 'G2':
             ax_tl.axvline(b["start"], color=PHASE_STYLES["S"]['color'], linewidth=1.2)
+            ax_tl.text(b["start"], 0.5, 'S', ha="center", va="center",
+                       fontsize=5, fontweight="bold",
+                       color= "#222222")
 
     ax_tl.set_ylim(-0.5, 0.5)
     ax_tl.set_yticks([])
