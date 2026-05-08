@@ -18,7 +18,7 @@ trash build
 trash src/REACTION/fix_bond_react.cpp
 trash src/REACTION/fix_bond_react.h
 
-base_react="https://raw.githubusercontent.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026/master/fix_bond_react_modified_version"
+base_react="https://raw.githubusercontent.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026/master/fix_bond_react_modified_version_Apr2024"
 wget -q "${base_react}/fix_bond_react.cpp" -O src/REACTION/fix_bond_react.cpp
 wget -q "${base_react}/fix_bond_react.h"   -O src/REACTION/fix_bond_react.h
 
