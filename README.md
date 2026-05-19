@@ -147,11 +147,26 @@ zenodo/
 │   ├── sim_p2_0.00025_noise_500_swi6_1000_nuc_80/
 │   ├── sim_p2_0.00025_noise_500_swi6_200_nuc_80/
 │   └── sim_p2_0.00025_noise_500_swi6_600_nuc_80/
-└── FigS10-13.zip/
-    ├── 10CyclcesWithout/
-    ├── 2nuc/
-    ├── 3nuc/
-    └── cenH/
+├──FigS10-13.zip/
+│   ├── 10CyclcesWithout/
+│   ├── 2nuc/
+│   ├── 3nuc/
+│   └── cenH/
+└── SuppMovies.zip/
+      ├── VideoS01.mp4
+      ├── VideoS02.mp4
+      ├── VideoS03.mp4
+      ├── VideoS04.mp4
+      ├── VideoS05.mp4
+      ├── VideoS06.mp4
+      ├── VideoS07.mp4
+      ├── VideoS08.mp4
+      ├── VideoS09.mp4
+      ├── VideoS10.mp4
+      ├── VideoS11.mp4
+      ├── VideoS12.mp4
+      └── VideoS13.mp4
+
 ```
 
 Each `FullA/` and `FullM/` leaf contains one LAMMPS run per parameter point (input files, dumps, `types1.dat`, etc.). Figures **2** and **3** expect local filenames in the working directory (`left_r2.dat`, `id_and_type.dat`, …) unless paths are edited in the scripts.
