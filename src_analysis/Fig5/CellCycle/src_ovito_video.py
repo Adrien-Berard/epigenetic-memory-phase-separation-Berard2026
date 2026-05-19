@@ -41,7 +41,7 @@ TYPE_NAMES = {
     5: 'Swi6*HDAC',
     # 6: 'Swi6*Epe1',
 }
-# ── PRX Life / Okabe-Ito palette ───────────────────────────────────
+# Color palette (Okabe-Ito)
 def _hex_to_rgb(h):
     h = h.lstrip('#')
     return tuple(int(h[i:i+2], 16) / 255.0 for i in (0, 2, 4))
@@ -104,14 +104,7 @@ pipeline = import_file(
              'Position.X', 'Position.Y', 'Position.Z']
 )
 
-# ── Modifier 1: assign PRX colors — robust to evolving types ──────
-# Problem: if a type first appears at frame 10, it won't be in the
-# type list at frame 0. OVITO adds new ParticleType entries lazily
-# as it encounters them, so we must handle types being absent.
-#
-# Strategy: for every type in PRX_COLORS that is NOT yet in the
-# property's type list, we add it explicitly so colors are always
-# pre-registered. Types present but not in PRX_COLORS get grey.
+# Modifier 1: assign colors (handles types appearing mid-trajectory)
 
 
 def assign_colors(frame, data):
@@ -237,7 +230,7 @@ PythonScriptModifier(function=create_backbone_bonds).enabled = True
 # renderer_image = OSPRayRenderer()
 # renderer_image.samples_per_pixel         = 8      # default, good balance
 # renderer_image.refinement_iterations     = 8      # more passes = cleaner
-# renderer_image.denoising_enabled         = True   # AI denoise, nearly free
+# renderer_image.denoising_enabled         = True   # OSPRay denoising
 # renderer_image.ambient_light_enabled     = True
 # renderer_image.ambient_brightness        = 1
 # renderer_image.direct_light_enabled      = True
@@ -262,7 +255,7 @@ PythonScriptModifier(function=create_backbone_bonds).enabled = True
 # renderer_image = OSPRayRenderer()
 # renderer_image.samples_per_pixel         = 8      # default, good balance
 # renderer_image.refinement_iterations     = 8      # more passes = cleaner
-# renderer_image.denoising_enabled         = True   # AI denoise, nearly free
+# renderer_image.denoising_enabled         = True   # OSPRay denoising
 # renderer_image.ambient_light_enabled     = True
 # renderer_image.ambient_brightness        = 1
 # renderer_image.direct_light_enabled      = True
@@ -295,7 +288,7 @@ vp.overlays.append(overlay)
 renderer_video = OSPRayRenderer()
 renderer_video.samples_per_pixel         = 4      # default, good balance
 renderer_video.refinement_iterations     = 4      # more passes = cleaner
-renderer_video.denoising_enabled         = True   # AI denoise, nearly free
+renderer_video.denoising_enabled         = True   # OSPRay denoising
 renderer_video.ambient_light_enabled     = True
 renderer_video.ambient_brightness        = 1
 renderer_video.direct_light_enabled      = True

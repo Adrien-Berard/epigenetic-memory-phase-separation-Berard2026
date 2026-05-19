@@ -1,9 +1,7 @@
 """
-Nucleosome Gillespie Dynamics — PRX-style figure generator
-Runs a Gillespie simulation and produces three publication-ready panels:
-  1. m(t) and s(t)
-  2. Vol(t)
-  3. Phase diagram with vector field and trajectory
+mean-field.py
+----------
+Gillespie mean-field simulation and phase-diagram panels for Figure 8.
 """
 
 import numpy as np
@@ -63,7 +61,7 @@ rng = np.random.default_rng(42)
 # Helper functions
 # ---------------------------------------------------------------------------
 def _label_panel(ax, label, x=-0.12, y=1.01): #x=-0.12 before
-    """PRX-style panel label slightly outside top-left of axes."""
+    """ panel label slightly outside top-left of axes."""
     label = label
     ax.text(
         x, y, label,

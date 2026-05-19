@@ -1,3 +1,8 @@
+"""
+epe1_snapshots.py
+----------
+Render Epe1 snapshot panel PDF for Figure 7.
+"""
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -16,10 +21,10 @@ BORDER_LW    = 4      # border line width (points)
 GREEN        = '#009E73'
 ORANGE       = '#E69F00'
 
-full_without = '/home/adrien/19_03_Sim/WihtoutEpe1/WithoutBE/full_view_wihtout_epe1.png'
-zoom_without = '/home/adrien/19_03_Sim/WihtoutEpe1/WithoutBE/zoom_view_wihtout_epe1.png'
-full_2nuc    = '/home/adrien/19_03_Sim/WithEpe1/2or3Nuc/2_nucleation_sites/full_view_2nuc.png'
-zoom_2nuc    = '/home/adrien/19_03_Sim/WithEpe1/2or3Nuc/2_nucleation_sites/zoom_view_2nuc.png'
+full_without = DATA_ROOT / "19_03_Sim" / "WihtoutEpe1" / "WithoutBE" / "full_view_wihtout_epe1.png"
+zoom_without = DATA_ROOT / "19_03_Sim" / "WihtoutEpe1" / "WithoutBE" / "zoom_view_wihtout_epe1.png"
+full_2nuc    = DATA_ROOT / "19_03_Sim" / "WithEpe1" / "2or3Nuc" / "2_nucleation_sites" / "full_view_2nuc.png"
+zoom_2nuc    = DATA_ROOT / "19_03_Sim" / "WithEpe1" / "2or3Nuc" / "2_nucleation_sites" / "zoom_view_2nuc.png"
 
 
 def load_snapshot(path: str | None) -> np.ndarray | None:

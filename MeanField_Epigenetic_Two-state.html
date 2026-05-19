@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nucleosome Gillespie Dynamics</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel2: #182246;
+      --text: #edf2ff;
+      --muted: #aeb9d9;
+      --accent: #7cc7ff;
+      --accent2: #9bffb0;
+      --accent3: #ffcc7c;
+      --border: #2a3767;
+      --danger: #ff8f8f;
+      --shadow: 0 10px 30px rgba(0,0,0,0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+    }
+
+    #controls {
+      width: 33%;
+      min-width: 360px;
+      max-width: 610px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border-right: 1px solid var(--border);
+      padding: 14px 14px 20px;
+      overflow-y: auto;
+    }
+
+    #main {
+      width: 67%;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 0.72fr 0.72fr 1.56fr;
+      gap: 10px;
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 1.16rem;
+      margin: 0 0 10px 0;
+      letter-spacing: 0.01em;
+    }
+
+    h2 {
+      font-size: 0.96rem;
+      margin: 0 0 8px 0;
+      color: var(--accent);
+    }
+
+    .equations {
+      font-size: 0.79rem;
+      line-height: 1.48;
+      color: var(--muted);
+      background: rgba(0,0,0,0.18);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 10px 0;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      color: var(--text);
+      background: rgba(124,199,255,0.10);
+      border: 1px solid rgba(124,199,255,0.28);
+      border-radius: 999px;
+      padding: 4px 9px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 110px;
+      gap: 6px 12px;
+      align-items: center;
+    }
+
+    .grid label {
+      font-size: 0.80rem;
+      color: var(--text);
+    }
+
+    .value {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent3);
+      font-size: 0.78rem;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .row {
+      margin-bottom: 8px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .buttonGroupTitle {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 12px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: #20305f;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: transform 0.06s ease, filter 0.12s ease;
+    }
+
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button.secondary { background: #1b274c; }
+    button.warn { background: #5d2b2b; }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.77rem;
+      color: var(--muted);
+      line-height: 1.42;
+    }
+
+    .small {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 10px;
+      background: #0d1328;
+    }
+
+    .plotTitle {
+      font-size: 1.00rem;
+      color: var(--accent);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .plotWrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .plotBox {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .badge {
+      font-size: 0.78rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 4px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1100px) {
+      #controls { min-width: 320px; }
+    }
+
+    @media (max-width: 900px) {
+      html, body { overflow: auto; }
+      #app {
+        display: block;
+        height: auto;
+      }
+      #controls, #main {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+      }
+      #controls {
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      #main {
+        height: 1500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside id="controls">
+      <h1>Nucleosome Gillespie Dynamics</h1>
+
+      <div class="chips">
+        <div class="chip">L step 5; δ follows 1/L</div>
+        <div class="chip">Larger export text</div>
+        <div class="chip">Separate white-background exports</div>
+        <div class="chip">Cell division option</div>
+        <div class="chip">Generation time up to t max / 3</div>
+        <div class="chip">Deterministic phase rendering</div>
+        <div class="chip">Discrete γ, β, ρ, Γ controls</div>
+        <div class="chip">Updated V(m,s) and exact SWI6 drift</div>
+        <div class="chip">Gaussian cell-division inheritance</div>
+        <div class="chip">Phase trajectory time-window controls</div>
+      </div>
+
+      <div class="equations">
+        <div><strong>State variables:</strong> m, s ∈ [0, 1]</div>
+        <div style="margin-top:6px;"><strong>dm/dt</strong> = k2²·s·m·(1−m) − k1·k2·m·(1−m)² + Γ·(1−m) − Γ·m</div>
+        <div style="margin-top:6px;"><strong>ds/dt</strong> = γ·[(ρ / Vol<sup>1/3</sup>)·(mL / Vol)·(1 − (L / Vol) − s) − s·exp[−β(s + mL / Vol)]]</div>
+        <div style="margin-top:6px;"><strong>Vol</strong> = L(C − 3m)/(1+s)</div>
+        <div style="margin-top:6px;"><strong>Cell division</strong> (if interval &gt; 0): s → 0 and m → nearest lattice value j/L to clamp[N(μ, σ), 0, 1], with μ = 0.25 + m/2 and σ = sqrt(μ(1−μ)/L)</div>
+      </div>
+
+      <div class="card">
+        <h2>Simulation controls</h2>
+        <div class="grid" id="controlGrid"></div>
+
+        <div class="buttonGroupTitle">Simulation</div>
+        <div class="buttons">
+          <button id="runBtn">Run once</button>
+          <button id="startContBtn">Start continuous</button>
+          <button id="stopContBtn" class="warn">Stop</button>
+          <button id="resetBtn" class="secondary">Reset traces</button>
+          <button id="randomBtn" class="secondary">Randomize initial state</button>
+        </div>
+
+        <div class="buttonGroupTitle">Export</div>
+        <div class="buttons">
+          <button id="exportBtn" class="secondary">Export CSV</button>
+          <button id="exportPngBtn" class="secondary">Export combined PNG</button>
+          <button id="exportMsBtn" class="secondary">m,s figure</button>
+          <button id="exportVolBtn" class="secondary">Volume figure</button>
+          <button id="exportPhaseBtn" class="secondary">Phase figure</button>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="small" style="margin-top:8px;">
+           The generation-time / cell-division slider uses the discrete values <span class="mono">1000, 2000, 5000, 10000, 20000, 50000</span>. Changing <span class="mono">L</span> automatically resets <span class="mono">δ</span> to <span class="mono">1/L</span>. Phase-plot fuzz is deterministic for a given trace, so redraws and PNG exports remain consistent. At cell division, m is redrawn from a Gaussian inheritance model and snapped to the nearest j/L lattice value within [0,1]. The storage interval is time-based and uses discrete values. The phase trajectory row lets you choose the left and right edges of the time window, and the phase trajectory points slider controls how many sampled points are drawn inside that selected window; cell-division events inside the window are always added as explicit trajectory points. The volume and SWI6-capture terms have been updated to match the analytical equations shown above.
+        </div>
+      </div>
+    </aside>
+
+    <main id="main">
+      <section class="card plotWrap">
+        <div class="plotTitle">
+          <span>m(t) and s(t)</span>
+          <span class="badge" id="badgeTop">ready</span>
+        </div>
+        <div class="plotBox"><canvas id="canvasMS"></canvas></div>
+      </section>
+
+      <section class="card plotWrap">
+        <div class="plotTitle">
+          <span>Volume Vol(t) = L(C − 3m)/(1+s)</span>
+          <span class="badge" id="badgeBottom">screen-fit</span>
+        </div>
+        <div class="plotBox"><canvas id="canvasVol"></canvas></div>
+      </section>
+
+      <section class="card plotWrap">
+        <div class="plotTitle">
+          <span>Phase diagram in (m, s)</span>
+          <span class="badge" id="badgePhase">sign map + trajectory</span>
+        </div>
+        <div class="plotBox"><canvas id="canvasPhase"></canvas></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+
+    const params = {
+      L: 50,
+      C: 6.0,
+      rhoLog: Math.log10(20),
+      beta: 4.0,
+      gamma: 1.0,
+      k1Log: 0.0,
+      k2Log: 0.0,
+      noiseLog: Math.log10(0.085),
+      delta: 0.02,
+      m0: 0.20,
+      s0: 0.20,
+      divisionInterval: 10000,
+      tMax: 150000,
+      maxEvents: 1000,
+      phaseWindowLeft: 0,
+      phaseWindowRight: 100,
+      sampleEvery: 1
+    };
+
+    const EVENT_SAFETY_CAP = 1000000;
+
+    function makeLinearChoices(min, max, step) {
+      const out = [];
+      for (let v = min; v <= max + 1e-12; v += step) {
+        out.push(Number(v.toFixed(6)));
+      }
+      return out;
+    }
+
+    function formatDiscreteValue(v) {
+      if (v >= 100) return Number(v).toFixed(0);
+      if (v >= 10) return Number(v).toFixed(0);
+      if (v >= 1) return Number(v).toFixed(v % 1 === 0 ? 0 : 1);
+      return Number(v).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
+    const controls = [
+      { key: 'L', label: 'L (nucleosomes)', min: 10, max: 200, step: 5, mapLabel: v => Number(v).toFixed(0) },
+      { key: 'C', label: 'C', min: 3, max: 12, step: 0.5, mapLabel: v => Number(v).toFixed(1) },
+      { key: 'rhoLog', label: 'ρ', choices: [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200].map(Math.log10), mapLabel: v => formatDiscreteValue(10 ** v) },
+      { key: 'beta', label: 'β', min: 0, max: 10, step: 1, mapLabel: v => Number(v).toFixed(0) },
+      { key: 'gamma', label: 'γ', choices: [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100], mapLabel: v => formatDiscreteValue(v) },
+      { key: 'k1Log', label: 'k1 [log scale]', min: -2, max: 1, step: 0.01, mapLabel: v => (10 ** v).toFixed(4) },
+      { key: 'k2Log', label: 'k2 [log scale]', min: -2, max: 1, step: 0.01, mapLabel: v => (10 ** v).toFixed(4) },
+      { key: 'noiseLog', label: 'Γ spontaneous conversion', choices: makeLinearChoices(0.005, 1.0, 0.005).map(Math.log10), mapLabel: v => formatDiscreteValue(10 ** v) },
+      { key: 'delta', label: 'δ', min: 0.005, max: 0.1, step: 0.0005, mapLabel: v => Number(v).toFixed(5) },
+      { key: 'm0', label: 'm(0)', min: 0, max: 1, step: 0.001, mapLabel: v => Number(v).toFixed(3) },
+      { key: 's0', label: 's(0)', min: 0, max: 1, step: 0.001, mapLabel: v => Number(v).toFixed(3) },
+      {
+        key: 'divisionInterval',
+        label: 'generation time / cell division time',
+        choices: [1000, 2000, 5000, 10000, 20000, 50000],
+        mapLabel: v => Number(v).toFixed(0)
+      },
+      { key: 'tMax', label: 't max', min: 10000, max: 300000, step: 10000, mapLabel: v => Number(v).toFixed(0) },
+      { key: 'maxEvents', label: 'phase trajectory points in window', min: 100, max: 5000, step: 100, mapLabel: v => Number(v).toFixed(0) },
+      { key: 'sampleEvery', label: 'store every time', choices: [0.5, 1, 2, 5, 10, 20, 50, 100], mapLabel: v => Number(v).toFixed(v < 1 ? 1 : 0) }
+    ];
+
+    const DISPLAY_FONT = {
+      tick: 30.36,
+      tickOffset: 26.4,
+      label: 32.89,
+      legend: 30.36,
+      exportTitle: 35.42,
+      exportMeta: 22.77,
+      trajectory: 0.70,
+      endpointDot: 1.8,
+      endpointCloud: 18
+    };
+
+    const EXPORT_FONT = {
+      tick: 91.08,
+      tickOffset: 79.2,
+      label: 98.67,
+      legend: 91.08,
+      exportTitle: 106.26,
+      exportMeta: 68.31,
+      trajectory: 1.7,
+      endpointDot: 5.4,
+      endpointCloud: 28
+    };
+
+    const DARK_THEME = {
+      background: '#0d1328',
+      axis: '#7f8bb4',
+      text: '#edf2ff',
+      muted: '#c7d1ef',
+      grid: 'rgba(174,185,217,0.12)',
+      legendBg: 'rgba(13,19,40,0.78)',
+      phaseQ1: 'rgba(255, 80, 80, 0.48)',
+      phaseQ2: 'rgba(255, 165, 0, 0.46)',
+      phaseQ3: 'rgba(80, 230, 230, 0.44)',
+      phaseQ4: 'rgba(70, 110, 255, 0.52)',
+      vector: 'rgba(220, 224, 233, 0.84)',
+      path: 'rgba(255,255,255,0.82)',
+      point: '#ffcc7c',
+      fixedPoint: '#ffd6fb',
+      mSeries: '#ff4d4d',
+      sSeries: '#9bffb0',
+      volSeries: '#ffcc7c'
+    };
+
+    const LIGHT_THEME = {
+      background: '#ffffff',
+      axis: '#4b5563',
+      text: '#111827',
+      muted: '#374151',
+      grid: 'rgba(17,24,39,0.09)',
+      legendBg: 'rgba(255,255,255,0.94)',
+      phaseQ1: 'rgba(239, 68, 68, 0.24)',
+      phaseQ2: 'rgba(245, 158, 11, 0.24)',
+      phaseQ3: 'rgba(6, 182, 212, 0.22)',
+      phaseQ4: 'rgba(59, 130, 246, 0.22)',
+      vector: 'rgba(55, 65, 81, 0.84)',
+      path: 'rgba(17,24,39,0.78)',
+      point: '#b45309',
+      fixedPoint: '#7c3aed',
+      mSeries: '#dc2626',
+      sSeries: '#059669',
+      volSeries: '#d97706'
+    };
+
+    const grid = document.getElementById('controlGrid');
+    const statusEl = document.getElementById('status');
+    const badgeTop = document.getElementById('badgeTop');
+    const badgeBottom = document.getElementById('badgeBottom');
+    const badgePhase = document.getElementById('badgePhase');
+
+    const runBtn = document.getElementById('runBtn');
+    const startContBtn = document.getElementById('startContBtn');
+    const stopContBtn = document.getElementById('stopContBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const exportPngBtn = document.getElementById('exportPngBtn');
+    const exportMsBtn = document.getElementById('exportMsBtn');
+    const exportVolBtn = document.getElementById('exportVolBtn');
+    const exportPhaseBtn = document.getElementById('exportPhaseBtn');
+
+    let latestTrace = null;
+    let continuousRunning = false;
+    let fixedPointCache = { key: null, value: { m: 0.5, s: 0.5 } };
+
+    function clamp(x, a, b) {
+      return Math.max(a, Math.min(b, x));
+    }
+
+    function deltaDefaultForL(L) {
+      return clamp(1 / Math.max(1, Number(L)), 0.005, 0.1);
+    }
+
+    function syncDeltaToCurrentL() {
+      params.delta = deltaDefaultForL(params.L);
+      if (controlRefs.delta) {
+        controlRefs.delta.slider.value = params.delta;
+        controlRefs.delta.updateValue();
+      }
+    }
+
+    function hashStringToSeed(str) {
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(seed) {
+      let a = seed >>> 0;
+      return function rand() {
+        a |= 0;
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function traceSeed(trace, p = params) {
+      if (!trace || trace.length === 0) return 1;
+      const first = trace[0];
+      const last = trace[trace.length - 1];
+      return hashStringToSeed([
+        trace.length,
+        p.L, p.C, p.delta, p.tMax, p.divisionInterval, p.maxEvents, p.phaseWindowLeft, p.phaseWindowRight,
+        first.t?.toFixed?.(5), first.m?.toFixed?.(5), first.s?.toFixed?.(5),
+        last.t?.toFixed?.(5), last.m?.toFixed?.(5), last.s?.toFixed?.(5)
+      ].join('|'));
+    }
+
+    function volume(L, m, s, C = params.C) {
+      // Condensate-volume approximation used by both plotting and the main rates:
+      // V = L (C - 3m) / (1 + s).
+      // The small floor prevents singular rates at the extreme C=3, m=1 boundary.
+      const raw = L * (C - 3 * m) / Math.max(1 + s, 1e-9);
+      return Math.max(raw, 1e-9);
+    }
+
+    function gaussianSample(mean, sigma) {
+      if (!(sigma > 0)) return mean;
+      const u1 = Math.max(Math.random(), Number.EPSILON);
+      const u2 = Math.random();
+      return mean + sigma * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    function quantizeMToLattice(value, L) {
+      const latticeN = Math.max(1, Math.round(L));
+      const clipped = clamp(value, 0, 1);
+      return clamp(Math.round(clipped * latticeN) / latticeN, 0, 1);
+    }
+
+    function applyCellDivision(state, p) {
+      const oldM = clamp(state.m, 0, 1);
+      const mean = clamp(0.25 + oldM / 2, 0, 1);
+      const sigma = Math.sqrt(Math.max(0, mean * (1 - mean) / Math.max(1, p.L)));
+      const rawDraw = gaussianSample(mean, sigma);
+      const clippedDraw = clamp(rawDraw, 0, 1);
+      const inheritedM = quantizeMToLattice(clippedDraw, p.L);
+
+      state.s = 0;
+      state.m = inheritedM;
+
+      return {
+        previousM: oldM,
+        mean,
+        sigma,
+        rawDraw,
+        clippedDraw,
+        inheritedM
+      };
+    }
+
+    function modelRates(state, p) {
+      const m = clamp(state.m, 0, 1);
+      const s = clamp(state.s, 0, 1);
+      const L = p.L;
+      const Vol = volume(L, m, s, p.C);
+      const rho = 10 ** p.rhoLog;
+      const k1 = 10 ** p.k1Log;
+      const k2 = 10 ** p.k2Log;
+      const noise = 10 ** p.noiseLog;
+      const x = (m * L) / Vol;
+      const nucleosomeDensity = L / Vol;
+
+      const mPlusRecruit = Math.max(0, (k2 * k2) * s * m * (1 - m));
+      const mMinusRecruit = Math.max(0, (k1 * k2) * m * (1 - m) * (1 - m));
+      const mPlusNoise = Math.max(0, noise * (1 - m));
+      const mMinusNoise = Math.max(0, noise * m);
+
+      // Net drift matches:
+      // ds/dt = gamma * [ (rho/V^(1/3)) * (mL/V) * (1 - L/V - s)
+      //                  - s * exp(-beta * (s + mL/V)) ].
+      // Negative capture contributions are implemented as additional loss events,
+      // so all Gillespie propensities remain non-negative while preserving the net drift.
+      const sCaptureRaw = (rho / Math.pow(Vol, 1 / 3)) * x * (1 - nucleosomeDensity - s);
+      const sEscape = Math.max(0, s * Math.exp(-p.beta * (s + x)));
+      const sPlus = Math.max(0, p.gamma * sCaptureRaw);
+      const sMinus = Math.max(0, p.gamma * sEscape) + Math.max(0, -p.gamma * sCaptureRaw);
+      const sCreation = sCaptureRaw;
+      const sLoss = sEscape;
+
+      return {
+        Vol,
+        rho,
+        k1,
+        k2,
+        noise,
+        x,
+        sCreation,
+        sLoss,
+        nucleosomeDensity,
+        processes: [
+          { name: 'm+ recruit', rate: mPlusRecruit, var: 'm', step: +p.delta },
+          { name: 'm- recruit', rate: mMinusRecruit, var: 'm', step: -p.delta },
+          { name: 'm+ Γ', rate: mPlusNoise, var: 'm', step: +p.delta },
+          { name: 'm- Γ', rate: mMinusNoise, var: 'm', step: -p.delta },
+          { name: 's+ bind', rate: sPlus, var: 's', step: +p.delta },
+          { name: 's- loss', rate: sMinus, var: 's', step: -p.delta }
+        ]
+      };
+    }
+
+    function driftAt(m, s, p = params) {
+      const proc = modelRates({ m, s }, p).processes;
+      const dm = (proc[0].rate + proc[2].rate) - (proc[1].rate + proc[3].rate);
+      const ds = proc[4].rate - proc[5].rate;
+      return { dm, ds };
+    }
+
+    function fixedPointKey(p) {
+      return [p.L, p.C, p.rhoLog.toFixed(6), p.beta.toFixed(6), p.gamma.toFixed(6), p.k1Log.toFixed(6), p.k2Log.toFixed(6), p.noiseLog.toFixed(6)].join('|');
+    }
+
+    function jacobianAt(m, s, p = params) {
+      const h = 0.0025;
+      const fpx = driftAt(clamp(m + h, 0, 1), s, p);
+      const fmx = driftAt(clamp(m - h, 0, 1), s, p);
+      const fpy = driftAt(m, clamp(s + h, 0, 1), p);
+      const fmy = driftAt(m, clamp(s - h, 0, 1), p);
+      const dmdm = (fpx.dm - fmx.dm) / (2 * h);
+      const dmds = (fpy.dm - fmy.dm) / (2 * h);
+      const dsdm = (fpx.ds - fmx.ds) / (2 * h);
+      const dsds = (fpy.ds - fmy.ds) / (2 * h);
+      return { dmdm, dmds, dsdm, dsds };
+    }
+
+    function estimateUnstableFixedPoint(p = params) {
+      const key = fixedPointKey(p);
+      if (fixedPointCache.key === key) return fixedPointCache.value;
+
+      let bestAny = null;
+      let bestUnstable = null;
+      const candidates = [];
+      const n = 36;
+      for (let i = 2; i <= n - 2; i++) {
+        for (let j = 2; j <= n - 2; j++) {
+          const m = i / n;
+          const s = j / n;
+          const { dm, ds } = driftAt(m, s, p);
+          const score = Math.hypot(dm, ds);
+          const jac = jacobianAt(m, s, p);
+          const trace = jac.dmdm + jac.dsds;
+          const det = jac.dmdm * jac.dsds - jac.dmds * jac.dsdm;
+          const disc = trace * trace - 4 * det;
+          const lambdaMax = Number.isFinite(disc) && disc >= 0 ? (trace + Math.sqrt(disc)) / 2 : trace / 2;
+          const unstable = det < 0 || lambdaMax > 0;
+          const cand = { m, s, score, unstable };
+          candidates.push(cand);
+          if (!bestAny || score < bestAny.score) bestAny = cand;
+          if (unstable && (!bestUnstable || score < bestUnstable.score)) bestUnstable = cand;
+        }
+      }
+
+      let best = bestUnstable || bestAny || { m: 0.5, s: 0.5, score: 1e9 };
+
+      let step = 0.06;
+      for (let iter = 0; iter < 7; iter++) {
+        let localBest = best;
+        for (let a = -3; a <= 3; a++) {
+          for (let b = -3; b <= 3; b++) {
+            const m = clamp(best.m + a * step, 0.02, 0.98);
+            const s = clamp(best.s + b * step, 0.02, 0.98);
+            const { dm, ds } = driftAt(m, s, p);
+            const score = Math.hypot(dm, ds);
+            const jac = jacobianAt(m, s, p);
+            const trace = jac.dmdm + jac.dsds;
+            const det = jac.dmdm * jac.dsds - jac.dmds * jac.dsdm;
+            const disc = trace * trace - 4 * det;
+            const lambdaMax = Number.isFinite(disc) && disc >= 0 ? (trace + Math.sqrt(disc)) / 2 : trace / 2;
+            const unstable = det < 0 || lambdaMax > 0;
+            const penalty = unstable ? 0 : 1e-4;
+            if (!localBest || score + penalty < localBest.score + (localBest.unstable ? 0 : 1e-4)) {
+              localBest = { m, s, score, unstable };
+            }
+          }
+        }
+        best = localBest;
+        step *= 0.45;
+      }
+
+      fixedPointCache = { key, value: { m: best.m, s: best.s } };
+      return fixedPointCache.value;
+    }
+
+    function gillespieSim(p, initialState = null, startT = 0, existingTrace = null) {
+      let t = startT;
+      let eventCount = 0;
+      let divisionCount = 0;
+      let state = initialState
+        ? { m: clamp(initialState.m, 0, 1), s: clamp(initialState.s, 0, 1) }
+        : { m: clamp(p.m0, 0, 1), s: clamp(p.s0, 0, 1) };
+
+      const trace = existingTrace
+        ? existingTrace.slice()
+        : [{ t, m: state.m, s: state.s, Vol: volume(p.L, state.m, state.s, p.C), isDivision: 0, divisionMean: null, divisionSigma: null, divisionRaw: null, divisionClipped: null, divisionNewM: null }];
+
+      let stopReason = 'limit';
+      let lastDivisionInfo = null;
+      const divisionOn = p.divisionInterval > 0;
+      let nextDivisionTime = divisionOn ? (Math.floor(startT / p.divisionInterval) + 1) * p.divisionInterval : Infinity;
+
+      let nextStoreTime = existingTrace && existingTrace.length ? startT + p.sampleEvery : p.sampleEvery;
+
+      while (t < p.tMax && eventCount < EVENT_SAFETY_CAP) {
+        const rates = modelRates(state, p);
+        const total = rates.processes.reduce((sum, q) => sum + q.rate, 0);
+
+        let nextEventTime = Infinity;
+        if (total > 0 && Number.isFinite(total)) {
+          const u1 = Math.random();
+          const dt = -Math.log(Math.max(u1, 1e-12)) / total;
+          nextEventTime = t + dt;
+        }
+
+        if (divisionOn && nextDivisionTime <= p.tMax && nextDivisionTime <= nextEventTime) {
+          t = nextDivisionTime;
+          const divisionInfo = applyCellDivision(state, p);
+          divisionCount += 1;
+          lastDivisionInfo = divisionInfo;
+          trace.push({
+            t,
+            m: state.m,
+            s: state.s,
+            Vol: volume(p.L, state.m, state.s, p.C),
+            isDivision: 1,
+            divisionMean: divisionInfo.mean,
+            divisionSigma: divisionInfo.sigma,
+            divisionRaw: divisionInfo.rawDraw,
+            divisionClipped: divisionInfo.clippedDraw,
+            divisionNewM: divisionInfo.inheritedM
+          });
+          nextDivisionTime += p.divisionInterval;
+          continue;
+        }
+
+        if (!(total > 0) || !Number.isFinite(total)) {
+          stopReason = 'zero-rate';
+          break;
+        }
+
+        t = nextEventTime;
+
+        const u2 = Math.random() * total;
+        let cumulative = 0;
+        let chosen = rates.processes[rates.processes.length - 1];
+        for (const proc of rates.processes) {
+          cumulative += proc.rate;
+          if (u2 <= cumulative) {
+            chosen = proc;
+            break;
+          }
+        }
+
+        state[chosen.var] = clamp(state[chosen.var] + chosen.step, 0, 1);
+        eventCount += 1;
+
+        if (t >= nextStoreTime || t >= p.tMax || eventCount === 1) {
+          trace.push({
+            t,
+            m: state.m,
+            s: state.s,
+            Vol: volume(p.L, state.m, state.s, p.C),
+            isDivision: 0,
+            divisionMean: null,
+            divisionSigma: null,
+            divisionRaw: null,
+            divisionClipped: null,
+            divisionNewM: null
+          });
+          while (nextStoreTime <= t) nextStoreTime += p.sampleEvery;
+        }
+      }
+
+      if (eventCount >= EVENT_SAFETY_CAP && t < p.tMax) {
+        stopReason = 'event-safety-cap';
+      }
+
+      if (trace.length === 0 || trace[trace.length - 1].t < t) {
+        trace.push({
+          t,
+          m: state.m,
+          s: state.s,
+          Vol: volume(p.L, state.m, state.s, p.C),
+          isDivision: 0,
+          divisionMean: null,
+          divisionSigma: null,
+          divisionRaw: null,
+          divisionClipped: null,
+          divisionNewM: null
+        });
+      }
+
+      return { trace, finalState: state, t, eventCount, divisionCount, stopReason, lastDivisionInfo };
+    }
+
+    function makeControl(control, store, parent) {
+      const label = document.createElement('label');
+      label.textContent = control.label;
+
+      const container = document.createElement('div');
+      container.className = 'row';
+      container.style.gridColumn = '1 / span 2';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid';
+
+      const inputWrap = document.createElement('div');
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.id = control.key;
+
+      const value = document.createElement('div');
+      value.className = 'value';
+      value.id = control.key + '_value';
+
+      function nearestChoiceIndex(val) {
+        if (!control.choices) return -1;
+        let bestIndex = 0;
+        let bestDistance = Infinity;
+        control.choices.forEach((choice, idx) => {
+          const distance = Math.abs(choice - val);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestIndex = idx;
+          }
+        });
+        return bestIndex;
+      }
+
+      function setBounds() {
+        if (control.choices) {
+          slider.min = 0;
+          slider.max = control.choices.length - 1;
+          slider.step = 1;
+          const idx = nearestChoiceIndex(store[control.key]);
+          slider.value = idx;
+          store[control.key] = control.choices[idx];
+          updateValue();
+          return;
+        }
+
+        const min = control.minGetter ? control.minGetter() : control.min;
+        const max = control.maxGetter ? control.maxGetter() : control.max;
+        const step = control.stepGetter ? control.stepGetter() : control.step;
+        slider.min = min;
+        slider.max = max;
+        slider.step = step;
+        store[control.key] = clamp(store[control.key], Number(min), Number(max));
+        slider.value = store[control.key];
+        updateValue();
+      }
+
+      function updateValue() {
+        const raw = control.choices ? control.choices[Number(slider.value)] : Number(slider.value);
+        store[control.key] = raw;
+        value.textContent = control.mapLabel ? control.mapLabel(raw) : String(raw);
+      }
+
+      slider.addEventListener('input', () => {
+        updateValue();
+        if (control.key === 'L') {
+          syncDeltaToCurrentL();
+        }
+        if (control.key === 'tMax' && controlRefs.divisionInterval) {
+          controlRefs.divisionInterval.setBounds();
+        }
+        if (latestTrace) render(latestTrace);
+        else drawPhaseDiagram();
+      });
+
+      inputWrap.appendChild(slider);
+      wrapper.appendChild(label);
+      wrapper.appendChild(value);
+      wrapper.appendChild(inputWrap);
+      wrapper.appendChild(document.createElement('div'));
+      container.appendChild(wrapper);
+      parent.appendChild(container);
+
+      return { slider, updateValue, setBounds };
+    }
+
+    function makePhaseWindowControl(store, parent) {
+      const label = document.createElement('label');
+      label.textContent = 'phase trajectory time window (%)';
+
+      const container = document.createElement('div');
+      container.className = 'row';
+      container.style.gridColumn = '1 / span 2';
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'grid';
+
+      const value = document.createElement('div');
+      value.className = 'value';
+
+      const inputWrap = document.createElement('div');
+      inputWrap.style.display = 'grid';
+      inputWrap.style.gridTemplateColumns = '1fr';
+      inputWrap.style.gap = '3px';
+
+      const leftSlider = document.createElement('input');
+      const rightSlider = document.createElement('input');
+      [leftSlider, rightSlider].forEach(slider => {
+        slider.type = 'range';
+        slider.min = 0;
+        slider.max = 100;
+        slider.step = 1;
+      });
+      leftSlider.id = 'phaseWindowLeft';
+      rightSlider.id = 'phaseWindowRight';
+      leftSlider.title = 'left edge of phase trajectory time window';
+      rightSlider.title = 'right edge of phase trajectory time window';
+
+      function setBounds() {
+        store.phaseWindowLeft = clamp(Number(store.phaseWindowLeft ?? 0), 0, 100);
+        store.phaseWindowRight = clamp(Number(store.phaseWindowRight ?? 100), 0, 100);
+        leftSlider.value = store.phaseWindowLeft;
+        rightSlider.value = store.phaseWindowRight;
+        updateValue();
+      }
+
+      function updateValue() {
+        store.phaseWindowLeft = clamp(Number(leftSlider.value), 0, 100);
+        store.phaseWindowRight = clamp(Number(rightSlider.value), 0, 100);
+        const [lo, hi] = phaseWindowPercentBounds(store);
+        value.textContent = `${lo.toFixed(0)}–${hi.toFixed(0)}%`;
+      }
+
+      [leftSlider, rightSlider].forEach(slider => {
+        slider.addEventListener('input', () => {
+          updateValue();
+          if (latestTrace) render(latestTrace);
+          else drawPhaseDiagram();
+        });
+      });
+
+      inputWrap.appendChild(leftSlider);
+      inputWrap.appendChild(rightSlider);
+      wrapper.appendChild(label);
+      wrapper.appendChild(value);
+      wrapper.appendChild(inputWrap);
+      wrapper.appendChild(document.createElement('div'));
+      container.appendChild(wrapper);
+      parent.appendChild(container);
+
+      return { leftSlider, rightSlider, updateValue, setBounds };
+    }
+
+    const controlRefs = {};
+    controls.forEach(c => {
+      controlRefs[c.key] = makeControl(c, params, grid);
+    });
+    controlRefs.phaseWindow = makePhaseWindowControl(params, grid);
+    Object.values(controlRefs).forEach(ref => ref.setBounds());
+
+    function niceTicks(min, max, count) {
+      if (max <= min) return [min];
+      const span = max - min;
+      const rough = span / Math.max(2, count);
+      const mag = 10 ** Math.floor(Math.log10(rough));
+      const norm = rough / mag;
+      let step;
+      if (norm < 1.5) step = 1 * mag;
+      else if (norm < 3) step = 2 * mag;
+      else if (norm < 7) step = 5 * mag;
+      else step = 10 * mag;
+      const ticks = [];
+      const start = Math.ceil(min / step) * step;
+      for (let v = start; v <= max + 1e-12; v += step) ticks.push(v);
+      return ticks.length ? ticks : [min, max];
+    }
+
+    function formatGroupedInteger(v) {
+      const sign = v < 0 ? '-' : '';
+      const s = Math.round(Math.abs(v)).toString();
+      return sign + s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function formatTick(v, options = {}) {
+      const av = Math.abs(v);
+      const nearInteger = Math.abs(v - Math.round(v)) < 1e-9;
+      if (options.groupThousands && nearInteger && av >= 1000) return formatGroupedInteger(v);
+      if (av > 0 && av < 0.001) return v.toExponential(1);
+      if (nearInteger && av >= 1000) return formatGroupedInteger(v);
+      if (av >= 100) return v.toFixed(0);
+      if (av >= 10) return v.toFixed(1).replace(/\.0$/, '');
+      return v.toFixed(3).replace(/\.?0+$/, '');
+    }
+
+    function prepareDisplayCanvas(canvas, minW, minH) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const W = Math.max(minW, Math.floor(rect.width));
+      const H = Math.max(minH, Math.floor(rect.height));
+      canvas.width = Math.max(1, Math.floor(W * dpr));
+      canvas.height = Math.max(1, Math.floor(H * dpr));
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+
+    function drawAxes(ctx, W, H, margins, xMin, xMax, yMin, yMax, yLabel, xLabel, theme, fontSet, axisOptions = {}) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = theme.background;
+      ctx.fillRect(0, 0, W, H);
+
+      const left = margins.left;
+      const right = W - margins.right;
+      const top = margins.top;
+      const bottom = H - margins.bottom;
+
+      ctx.strokeStyle = theme.axis;
+      ctx.lineWidth = fontSet === EXPORT_FONT ? 2.0 : 1.2;
+      ctx.beginPath();
+      ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);
+      ctx.moveTo(left, bottom); ctx.lineTo(left, top);
+      ctx.stroke();
+
+      const xTicks = axisOptions.xTicks || niceTicks(xMin, xMax, 4);
+      const yTicks = axisOptions.yTicks || niceTicks(yMin, yMax, 4);
+      const xFormatter = axisOptions.xTickFormatter || ((v) => formatTick(v));
+      const yFormatter = axisOptions.yTickFormatter || ((v) => formatTick(v));
+
+      const tickOffset = fontSet.tickOffset || fontSet.tick;
+      ctx.font = `${fontSet.tick}px Inter, sans-serif`;
+      ctx.fillStyle = theme.muted;
+      ctx.textBaseline = 'middle';
+
+      for (const x of xTicks) {
+        const px = left + (x - xMin) / Math.max(1e-12, (xMax - xMin)) * (right - left);
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath();
+        ctx.moveTo(px, top);
+        ctx.lineTo(px, bottom);
+        ctx.stroke();
+
+        if (!axisOptions.hideXTickLabels) {
+          ctx.strokeStyle = theme.axis;
+          ctx.beginPath();
+          ctx.moveTo(px, bottom);
+          ctx.lineTo(px, bottom + (fontSet === EXPORT_FONT ? 16 : 8));
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.fillText(xFormatter(x), px, bottom + tickOffset * 1.1);
+        }
+      }
+
+      for (const y of yTicks) {
+        const py = bottom - (y - yMin) / Math.max(1e-12, (yMax - yMin)) * (bottom - top);
+        ctx.strokeStyle = theme.grid;
+        ctx.beginPath();
+        ctx.moveTo(left, py);
+        ctx.lineTo(right, py);
+        ctx.stroke();
+
+        ctx.strokeStyle = theme.axis;
+        ctx.beginPath();
+        ctx.moveTo(left - (fontSet === EXPORT_FONT ? 16 : 8), py);
+        ctx.lineTo(left, py);
+        ctx.stroke();
+
+        ctx.textAlign = 'right';
+        ctx.fillText(yFormatter(y), left - tickOffset * 0.6, py);
+      }
+
+      ctx.fillStyle = theme.text;
+      ctx.font = `${fontSet.label}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      if (!axisOptions.hideXLabel && xLabel) {
+        ctx.fillText(xLabel, (left + right) / 2, H - (fontSet === EXPORT_FONT ? 8 : 4));
+      }
+
+      ctx.save();
+      ctx.translate(fontSet === EXPORT_FONT ? 72 : 30, (top + bottom) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+
+      return {
+        left, right, top, bottom,
+        mapX: x => left + (x - xMin) / Math.max(1e-12, (xMax - xMin)) * (right - left),
+        mapY: y => bottom - (y - yMin) / Math.max(1e-12, (yMax - yMin)) * (bottom - top)
+      };
+    }
+
+    function getSeriesMargins(fontSet) {
+      if (fontSet === EXPORT_FONT) {
+        return { left: 260, right: 180, top: 56, bottom: 180 };
+      }
+      return { left: 130, right: 112, top: 28, bottom: 92 };
+    }
+
+    function getPhaseMargins(fontSet) {
+      if (fontSet === EXPORT_FONT) {
+        return { left: 280, right: 180, top: 72, bottom: 260 };
+      }
+      return { left: 140, right: 112, top: 28, bottom: 100 };
+    }
+
+    function drawSeriesIntoContext(ctx, W, H, series, options, theme, fontSet) {
+      const margins = options.margins || getSeriesMargins(fontSet);
+      const axes = drawAxes(
+        ctx, W, H, margins,
+        options.xMin, options.xMax, options.yMin, options.yMax,
+        options.yLabel, options.xLabel, theme, fontSet,
+        options.axisOptions || {}
+      );
+
+      if (options.markers && options.markers.length) {
+        ctx.save();
+        ctx.strokeStyle = theme.point;
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = fontSet === EXPORT_FONT ? 2.0 : 1.0;
+        for (const marker of options.markers) {
+          if (marker.x < options.xMin || marker.x > options.xMax) continue;
+          const px = axes.mapX(marker.x);
+          ctx.setLineDash(fontSet === EXPORT_FONT ? [12, 12] : [6, 6]);
+          ctx.beginPath();
+          ctx.moveTo(px, axes.top);
+          ctx.lineTo(px, axes.bottom);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      for (const s of series) {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = fontSet === EXPORT_FONT ? 4.2 : 2.8;
+        ctx.beginPath();
+        s.data.forEach((pt, i) => {
+          const x = axes.mapX(pt.x);
+          const y = axes.mapY(pt.y);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      const legendItems = series.slice();
+      const boxW = fontSet === EXPORT_FONT ? 240 : 150;
+      const lineLen = fontSet === EXPORT_FONT ? 56 : 30;
+      const gap = fontSet === EXPORT_FONT ? 68 : 34;
+      const lx = axes.right - (fontSet === EXPORT_FONT ? 215 : 135);
+      const ly = axes.top + (fontSet === EXPORT_FONT ? 38 : 18);
+
+      if (legendItems.length) {
+        ctx.fillStyle = theme.legendBg;
+        ctx.fillRect(lx - 22, ly - 32, boxW, legendItems.length * gap + (fontSet === EXPORT_FONT ? 36 : 24));
+      }
+
+      ctx.font = `${fontSet.legend}px Inter, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+
+      legendItems.forEach((s, i) => {
+        const yy = ly + i * gap;
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = fontSet === EXPORT_FONT ? 6.0 : 4.0;
+        ctx.beginPath();
+        ctx.moveTo(lx, yy);
+        ctx.lineTo(lx + lineLen, yy);
+        ctx.stroke();
+        ctx.fillStyle = theme.text;
+        ctx.fillText(s.label, lx + lineLen + 16, yy);
+      });
+    }
+
+    function drawSeries(canvas, series, options, theme = DARK_THEME, minW = 300, minH = 180, fontSet = DISPLAY_FONT) {
+      const { ctx, W, H } = prepareDisplayCanvas(canvas, minW, minH);
+      drawSeriesIntoContext(ctx, W, H, series, options, theme, fontSet);
+    }
+
+    function drawArrow(ctx, x, y, u, v, scale, fontSet) {
+      const dx = u * scale;
+      const dy = -v * scale;
+      const len = Math.hypot(dx, dy);
+      if (len < 0.5) return;
+
+      const x2 = x + dx;
+      const y2 = y + dy;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      const angle = Math.atan2(dy, dx);
+      const ah = Math.min(fontSet === EXPORT_FONT ? 16 : 9, Math.max(fontSet === EXPORT_FONT ? 8 : 5, 0.26 * len));
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - ah * Math.cos(angle - Math.PI / 6), y2 - ah * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - ah * Math.cos(angle + Math.PI / 6), y2 - ah * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    function phaseWindowPercentBounds(p = params) {
+      const a = clamp(Number(p.phaseWindowLeft ?? 0), 0, 100);
+      const b = clamp(Number(p.phaseWindowRight ?? 100), 0, 100);
+      const lo = Math.min(a, b);
+      const hi = Math.max(a, b);
+      return hi - lo < 1 ? [Math.max(0, lo - 0.5), Math.min(100, hi + 0.5)] : [lo, hi];
+    }
+
+    function phaseWindowTimeBounds(trace, p = params) {
+      const startT = trace && trace.length ? Number(trace[0].t || 0) : 0;
+      const endT = trace && trace.length ? Number(trace[trace.length - 1].t || startT) : startT;
+      const span = Math.max(0, endT - startT);
+      const [leftPct, rightPct] = phaseWindowPercentBounds(p);
+      return {
+        start: startT + span * (leftPct / 100),
+        end: startT + span * (rightPct / 100),
+        leftPct,
+        rightPct
+      };
+    }
+
+    function interpolateTraceAt(trace, t) {
+      if (!trace || trace.length === 0) return null;
+      if (t <= trace[0].t) return { m: trace[0].m, s: trace[0].s };
+      const last = trace[trace.length - 1];
+      if (t >= last.t) return { m: last.m, s: last.s };
+
+      let lo = 0;
+      let hi = trace.length - 1;
+      while (hi - lo > 1) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (trace[mid].t <= t) lo = mid;
+        else hi = mid;
+      }
+      const a = trace[lo];
+      const b = trace[hi];
+      const denom = Math.max(1e-12, b.t - a.t);
+      const alpha = clamp((t - a.t) / denom, 0, 1);
+      return {
+        m: a.m + alpha * (b.m - a.m),
+        s: a.s + alpha * (b.s - a.s)
+      };
+    }
+
+    function buildPhaseDisplayTrace(trace, fixedPoint, p = params, rng = null) {
+      if (!trace || trace.length === 0) return [];
+      if (!rng) rng = mulberry32(traceSeed(trace, p));
+
+      const { start, end } = phaseWindowTimeBounds(trace, p);
+      const pointCount = Math.max(2, Math.round(p.maxEvents || 1000));
+      const windowSpan = Math.max(0, end - start);
+      const jitterAmp = p.delta / 4;
+      const out = [];
+      let prevRaw = null;
+
+      function addJitteredPoint(rawM, rawS, tag = '', isDivision = false, rawT = null) {
+        const m = clamp(rawM + (rng() * 2 - 1) * jitterAmp, 0, 1);
+        const s = clamp(rawS + (rng() * 2 - 1) * jitterAmp, 0, 1);
+        out.push({ m, s, rawM, rawS, tag, isDivision, rawT });
+      }
+
+      const targetEntries = [];
+      for (let idx = 0; idx < pointCount; idx++) {
+        const alpha = pointCount === 1 ? 0 : idx / (pointCount - 1);
+        const targetT = start + windowSpan * alpha;
+        targetEntries.push({ t: targetT, isDivision: false, data: null });
+      }
+
+      trace.forEach(d => {
+        if (d.isDivision && d.t >= start - 1e-12 && d.t <= end + 1e-12) {
+          targetEntries.push({ t: d.t, isDivision: true, data: d });
+        }
+      });
+
+      targetEntries.sort((a, b) => {
+        if (Math.abs(a.t - b.t) > 1e-12) return a.t - b.t;
+        return Number(b.isDivision) - Number(a.isDivision);
+      });
+
+      const mergedTargets = [];
+      for (const entry of targetEntries) {
+        const last = mergedTargets[mergedTargets.length - 1];
+        if (last && Math.abs(last.t - entry.t) <= 1e-12) {
+          if (entry.isDivision) {
+            last.isDivision = true;
+            last.data = entry.data;
+          }
+        } else {
+          mergedTargets.push({ ...entry });
+        }
+      }
+
+      for (const entry of mergedTargets) {
+        const raw = entry.isDivision && entry.data
+          ? { m: entry.data.m, s: entry.data.s }
+          : interpolateTraceAt(trace, entry.t);
+        if (!raw) continue;
+
+        if (prevRaw && fixedPoint) {
+          const crossedLowToHigh = prevRaw.m < fixedPoint.m && prevRaw.s < fixedPoint.s && raw.m > fixedPoint.m && raw.s > fixedPoint.s;
+          if (crossedLowToHigh) {
+            const bridge = [
+              { m: (prevRaw.m + fixedPoint.m) / 2, s: (prevRaw.s + fixedPoint.s) / 2 },
+              { m: fixedPoint.m, s: fixedPoint.s },
+              { m: (fixedPoint.m + raw.m) / 2, s: (fixedPoint.s + raw.s) / 2 }
+            ];
+            bridge.forEach(pt => addJitteredPoint(pt.m, pt.s, 'crossing-bridge'));
+          }
+        }
+
+        addJitteredPoint(raw.m, raw.s, entry.isDivision ? 'division' : 'sample', entry.isDivision, entry.t);
+        prevRaw = raw;
+      }
+
+      return out;
+    }
+
+    function drawFuzzyEndpoint(ctx, axes, point, theme, fontSet, jitterAmp, rng = Math.random) {
+      const px = axes.mapX(point.rawM ?? point.m);
+      const py = axes.mapY(point.rawS ?? point.s);
+      ctx.save();
+      for (let k = 0; k < fontSet.endpointCloud; k++) {
+        const jm = clamp((point.rawM ?? point.m) + (rng() * 2 - 1) * jitterAmp, 0, 1);
+        const js = clamp((point.rawS ?? point.s) + (rng() * 2 - 1) * jitterAmp, 0, 1);
+        ctx.fillStyle = theme.point;
+        ctx.globalAlpha = 0.08 + 0.04 * rng();
+        ctx.beginPath();
+        ctx.arc(axes.mapX(jm), axes.mapY(js), fontSet.endpointDot, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = theme.point;
+      ctx.beginPath();
+      ctx.arc(px, py, fontSet === EXPORT_FONT ? 4.2 : 2.6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawPhaseIntoContext(ctx, W, H, theme, trace = null, fontSet = DISPLAY_FONT) {
+      const margins = getPhaseMargins(fontSet);
+      const axes = drawAxes(ctx, W, H, margins, 0, 1, 0, 1, 's', 'm', theme, fontSet);
+
+      const nx = Math.max(44, Math.floor((axes.right - axes.left) / (fontSet === EXPORT_FONT ? 12 : 7)));
+      const ny = Math.max(44, Math.floor((axes.bottom - axes.top) / (fontSet === EXPORT_FONT ? 12 : 7)));
+      const dx = (axes.right - axes.left) / nx;
+      const dy = (axes.bottom - axes.top) / ny;
+
+      for (let ix = 0; ix < nx; ix++) {
+        for (let iy = 0; iy < ny; iy++) {
+          const m = (ix + 0.5) / nx;
+          const s = (iy + 0.5) / ny;
+          const { dm, ds } = driftAt(m, s, params);
+
+          let color = theme.phaseQ4;
+          if (dm >= 0 && ds >= 0) color = theme.phaseQ1;
+          else if (dm >= 0 && ds < 0) color = theme.phaseQ2;
+          else if (dm < 0 && ds >= 0) color = theme.phaseQ3;
+
+          const x0 = axes.left + ix * dx;
+          const y0 = axes.bottom - (iy + 1) * dy;
+          ctx.fillStyle = color;
+          ctx.fillRect(x0, y0, dx + 0.5, dy + 0.5);
+        }
+      }
+
+      const arrowNx = fontSet === EXPORT_FONT ? 13 : 12;
+      const arrowNy = fontSet === EXPORT_FONT ? 13 : 12;
+      const vectors = [];
+      let maxMag = 1e-12;
+      for (let ix = 0; ix < arrowNx; ix++) {
+        for (let iy = 0; iy < arrowNy; iy++) {
+          const m = (ix + 0.5) / arrowNx;
+          const s = (iy + 0.5) / arrowNy;
+          const { dm, ds } = driftAt(m, s, params);
+          const mag = Math.hypot(dm, ds);
+          maxMag = Math.max(maxMag, mag);
+          vectors.push({ m, s, dm, ds, mag });
+        }
+      }
+
+      ctx.strokeStyle = theme.vector;
+      ctx.lineWidth = fontSet === EXPORT_FONT ? 1.6 : 0.9;
+      const baseScale = (fontSet === EXPORT_FONT ? 0.065 : 0.055) * Math.min(axes.right - axes.left, axes.bottom - axes.top);
+
+      for (const vec of vectors) {
+        const x = axes.mapX(vec.m);
+        const y = axes.mapY(vec.s);
+        const norm = vec.mag / maxMag;
+        const scale = baseScale / Math.max(vec.mag, 1e-12) * (0.34 + 0.92 * norm);
+        drawArrow(ctx, x, y, vec.dm, vec.ds, scale, fontSet);
+      }
+
+      const fixedPoint = estimateUnstableFixedPoint(params);
+
+      if (fixedPoint) {
+        const fx = axes.mapX(fixedPoint.m);
+        const fy = axes.mapY(fixedPoint.s);
+        const cross = fontSet === EXPORT_FONT ? 11 : 6;
+        ctx.strokeStyle = theme.fixedPoint;
+        ctx.lineWidth = fontSet === EXPORT_FONT ? 2.2 : 1.1;
+        ctx.beginPath();
+        ctx.moveTo(fx - cross, fy - cross);
+        ctx.lineTo(fx + cross, fy + cross);
+        ctx.moveTo(fx - cross, fy + cross);
+        ctx.lineTo(fx + cross, fy - cross);
+        ctx.stroke();
+      }
+
+      if (trace && trace.length > 0) {
+        const phaseRng = mulberry32(traceSeed(trace, params));
+        const displayTrace = buildPhaseDisplayTrace(trace, fixedPoint, params, phaseRng);
+        if (displayTrace.length > 0) {
+          ctx.strokeStyle = theme.path;
+          ctx.lineWidth = fontSet.trajectory;
+          ctx.beginPath();
+          displayTrace.forEach((pt, i) => {
+            const x = axes.mapX(clamp(pt.m, 0, 1));
+            const y = axes.mapY(clamp(pt.s, 0, 1));
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+
+          const divisionPoints = displayTrace.filter(pt => pt.isDivision);
+          if (divisionPoints.length > 0) {
+            ctx.save();
+            ctx.fillStyle = theme.point;
+            ctx.globalAlpha = 0.95;
+            const r = fontSet === EXPORT_FONT ? 5.0 : 3.1;
+            divisionPoints.forEach(pt => {
+              ctx.beginPath();
+              ctx.arc(axes.mapX(clamp(pt.m, 0, 1)), axes.mapY(clamp(pt.s, 0, 1)), r, 0, 2 * Math.PI);
+              ctx.fill();
+            });
+            ctx.restore();
+          }
+
+          drawFuzzyEndpoint(ctx, axes, displayTrace[displayTrace.length - 1], theme, fontSet, params.delta / 4, phaseRng);
+        }
+      }
+
+      // Right-side legend text removed to keep the phase plot focused and uncluttered.
+    }
+
+    function drawPhaseDiagram(canvas = document.getElementById('canvasPhase'), theme = DARK_THEME, trace = latestTrace, fontSet = DISPLAY_FONT) {
+      const { ctx, W, H } = prepareDisplayCanvas(canvas, 300, 240);
+      drawPhaseIntoContext(ctx, W, H, theme, trace, fontSet);
+      const divText = `Tdiv=${params.divisionInterval}`;
+      const [phaseLeft, phaseRight] = phaseWindowPercentBounds(params);
+      badgePhase.textContent = `ρ=${(10 ** params.rhoLog).toFixed(3)}, k1=${(10 ** params.k1Log).toFixed(3)}, k2=${(10 ** params.k2Log).toFixed(3)}, β=${params.beta.toFixed(0)}, γ=${formatDiscreteValue(params.gamma)}, L=${params.L}, δ=${params.delta.toFixed(3)}, ${divText}, window=${phaseLeft.toFixed(0)}–${phaseRight.toFixed(0)}%`;
+    }
+
+    function render(trace) {
+      const msCanvas = document.getElementById('canvasMS');
+      const volCanvas = document.getElementById('canvasVol');
+      if (!trace || trace.length === 0) return;
+
+      const tMax = Math.max(trace[trace.length - 1].t || 1, 1);
+      const divisionMarkers = trace.filter(d => d.isDivision).map(d => ({ x: d.t }));
+      const msSeries = [
+        { label: 'm', color: DARK_THEME.mSeries, data: trace.map(d => ({ x: d.t, y: d.m })) },
+        { label: 's', color: DARK_THEME.sSeries, data: trace.map(d => ({ x: d.t, y: d.s })) }
+      ];
+
+      drawSeries(msCanvas, msSeries, {
+        xMin: 0,
+        xMax: tMax,
+        yMin: 0,
+        yMax: 1,
+        yLabel: 'm, s',
+        xLabel: 'time',
+        markers: divisionMarkers
+      }, DARK_THEME, 300, 180, DISPLAY_FONT);
+
+      const vMin = Math.min(...trace.map(d => d.Vol));
+      const vMax = Math.max(...trace.map(d => d.Vol));
+      const pad = Math.max(1e-6, 0.05 * (vMax - vMin || 1));
+
+      const volSeries = [
+        { label: 'Vol', color: DARK_THEME.volSeries, data: trace.map(d => ({ x: d.t, y: d.Vol })) }
+      ];
+
+      drawSeries(volCanvas, volSeries, {
+        xMin: 0,
+        xMax: tMax,
+        yMin: 0,
+        yMax: vMax + pad,
+        yLabel: 'Vol',
+        xLabel: 'time',
+        markers: divisionMarkers
+      }, DARK_THEME, 300, 180, DISPLAY_FONT);
+
+      drawPhaseDiagram(document.getElementById('canvasPhase'), DARK_THEME, trace, DISPLAY_FONT);
+    }
+
+    function updateStatus(result, continuous = false) {
+      const k1 = 10 ** params.k1Log;
+      const k2 = 10 ** params.k2Log;
+      const rho = 10 ** params.rhoLog;
+      const noise = 10 ** params.noiseLog;
+      const Vol = volume(params.L, result.finalState.m, result.finalState.s, params.C);
+      const divMode = `every ${params.divisionInterval}`;
+      const lastDivText = result.lastDivisionInfo
+        ? `Latest division draw: μ=<strong>${result.lastDivisionInfo.mean.toFixed(4)}</strong>, σ=<strong>${result.lastDivisionInfo.sigma.toFixed(4)}</strong>, raw=<strong>${result.lastDivisionInfo.rawDraw.toFixed(4)}</strong>, clipped=<strong>${result.lastDivisionInfo.clippedDraw.toFixed(4)}</strong>, lattice m=<strong>${result.lastDivisionInfo.inheritedM.toFixed(4)}</strong>`
+        : `Latest division draw: <strong>none in this chunk</strong>`;
+
+      statusEl.innerHTML = [
+        `${continuous ? 'Continuous mode' : 'Single run'}; current time: <strong>${result.t.toFixed(3)}</strong>`,
+        `Events in run: <strong>${result.eventCount}</strong>; divisions in latest chunk: <strong>${result.divisionCount}</strong>`,
+        `Current m: <strong>${result.finalState.m.toFixed(4)}</strong>, Current s: <strong>${result.finalState.s.toFixed(4)}</strong>, Current Vol: <strong>${Vol.toFixed(4)}</strong>`,
+        `Current parameters: L=${params.L}, C=${params.C.toFixed(3)}, γ=${formatDiscreteValue(params.gamma)}, ρ=${formatDiscreteValue(rho)}, β=${params.beta.toFixed(0)}, k1=${k1.toFixed(4)}, k2=${k2.toFixed(4)}, Γ=${noise.toFixed(4)}, δ=${params.delta.toFixed(5)}, generation time=${divMode}`,
+        lastDivText,
+        `Stop reason: <strong>${result.stopReason}</strong>`
+      ].join('<br>');
+      badgeTop.textContent = `points ${latestTrace ? latestTrace.length : 0}`;
+      badgeBottom.textContent = `t=${result.t.toFixed(2)}`;
+    }
+
+    function initialTracePoint() {
+      return {
+        t: 0,
+        m: params.m0,
+        s: params.s0,
+        Vol: volume(params.L, params.m0, params.s0, params.C),
+        isDivision: 0,
+        divisionMean: null,
+        divisionSigma: null,
+        divisionRaw: null,
+        divisionClipped: null,
+        divisionNewM: null
+      };
+    }
+
+    function runSimulation() {
+      badgeTop.textContent = 'running';
+      const result = gillespieSim(params);
+      latestTrace = result.trace;
+      render(latestTrace);
+      updateStatus(result, false);
+      badgeTop.textContent = 'done';
+    }
+
+    function resetTraces() {
+      latestTrace = [initialTracePoint()];
+      render(latestTrace);
+      statusEl.innerHTML = 'Trace reset to initial condition. Division events, when present, are shown as faint dashed vertical lines in the time-series plots.';
+      badgeTop.textContent = 'reset';
+      badgeBottom.textContent = 'initial';
+    }
+
+    function randomizeInitials() {
+      params.m0 = Math.random();
+      params.s0 = Math.random();
+      controlRefs.m0.slider.value = params.m0;
+      controlRefs.s0.slider.value = params.s0;
+      controlRefs.m0.updateValue();
+      controlRefs.s0.updateValue();
+      resetTraces();
+    }
+
+    function exportCSV() {
+      if (!latestTrace || latestTrace.length === 0) return;
+      const rows = ['time,m,s,Vol,isDivision,divisionMean,divisionSigma,divisionRaw,divisionClipped,divisionNewM'];
+      for (const d of latestTrace) {
+        rows.push([
+          d.t,
+          d.m,
+          d.s,
+          d.Vol,
+          d.isDivision || 0,
+          d.divisionMean ?? '',
+          d.divisionSigma ?? '',
+          d.divisionRaw ?? '',
+          d.divisionClipped ?? '',
+          d.divisionNewM ?? ''
+        ].join(','));
+      }
+      const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'nucleosome_gillespie_trace.csv';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 0);
+    }
+
+    async function startContinuousRun() {
+      if (continuousRunning) return;
+      continuousRunning = true;
+      badgeTop.textContent = 'continuous';
+
+      if (!latestTrace || latestTrace.length === 0) {
+        latestTrace = [initialTracePoint()];
+      }
+
+      let currentState = { m: latestTrace[latestTrace.length - 1].m, s: latestTrace[latestTrace.length - 1].s };
+      let currentT = latestTrace[latestTrace.length - 1].t;
+
+      while (continuousRunning) {
+        const chunkParams = { ...params, tMax: currentT + params.tMax };
+        const result = gillespieSim(chunkParams, currentState, currentT, latestTrace);
+        latestTrace = result.trace;
+        currentState = result.finalState;
+        currentT = result.t;
+
+        render(latestTrace);
+        updateStatus(result, true);
+
+        if ((result.eventCount === 0 && result.divisionCount === 0) || result.stopReason === 'zero-rate') {
+          continuousRunning = false;
+          badgeTop.textContent = 'stalled';
+          break;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+
+      if (!continuousRunning && badgeTop.textContent === 'continuous') {
+        badgeTop.textContent = 'stopped';
+      }
+    }
+
+    function stopContinuousRun() {
+      continuousRunning = false;
+      badgeTop.textContent = 'stopped';
+    }
+
+    function drawPlotToOffscreen(series, options, theme, W, H, fontSet) {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      drawSeriesIntoContext(ctx, W, H, series, options, theme, fontSet);
+      return canvas;
+    }
+
+    function drawPhaseToOffscreen(theme, trace, W, H, fontSet) {
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      drawPhaseIntoContext(ctx, W, H, theme, trace, fontSet);
+      return canvas;
+    }
+
+    function buildSeriesForExport(kind) {
+      if (!latestTrace || latestTrace.length === 0) {
+        latestTrace = [initialTracePoint()];
+      }
+
+      const trace = latestTrace;
+      const tMax = Math.max(trace[trace.length - 1].t || 1, 1);
+      const divisionMarkers = trace.filter(d => d.isDivision).map(d => ({ x: d.t }));
+
+      if (kind === 'ms') {
+        return {
+          title: 'Nucleosome Gillespie Dynamics — m(t) and s(t)',
+          plotCanvas: drawPlotToOffscreen(
+            [
+              { label: 'm', color: LIGHT_THEME.mSeries, data: trace.map(d => ({ x: d.t, y: d.m })) },
+              { label: 's', color: LIGHT_THEME.sSeries, data: trace.map(d => ({ x: d.t, y: d.s })) }
+            ],
+            {
+              xMin: 0,
+              xMax: tMax,
+              yMin: 0,
+              yMax: 1,
+              yLabel: 'm, s',
+              xLabel: 'time',
+              markers: divisionMarkers
+            },
+            LIGHT_THEME,
+            2200,
+            1300,
+            EXPORT_FONT
+          ),
+          filename: 'nucleosome_gillespie_m_s.png'
+        };
+      }
+
+      if (kind === 'vol') {
+        const vMin = Math.min(...trace.map(d => d.Vol));
+        const vMax = Math.max(...trace.map(d => d.Vol));
+        const pad = Math.max(1e-6, 0.05 * (vMax - vMin || 1));
+        return {
+          title: 'Nucleosome Gillespie Dynamics — Volume',
+          plotCanvas: drawPlotToOffscreen(
+            [
+              { label: 'Vol', color: LIGHT_THEME.volSeries, data: trace.map(d => ({ x: d.t, y: d.Vol })) }
+            ],
+            {
+              xMin: 0,
+              xMax: tMax,
+              yMin: 0,
+              yMax: vMax + pad,
+              yLabel: 'Vol',
+              xLabel: 'time',
+              markers: divisionMarkers
+            },
+            LIGHT_THEME,
+            2200,
+            1300,
+            EXPORT_FONT
+          ),
+          filename: 'nucleosome_gillespie_volume.png'
+        };
+      }
+
+      return {
+        title: 'Nucleosome Gillespie Dynamics — Phase Diagram',
+        plotCanvas: drawPhaseToOffscreen(LIGHT_THEME, trace, 3200, 1900, EXPORT_FONT),
+        filename: 'nucleosome_gillespie_phase.png'
+      };
+    }
+
+    function parameterSummaryText() {
+      const divText = params.divisionInterval.toFixed(0);
+      return `L=${params.L}, C=${params.C.toFixed(3)}, ρ=${formatDiscreteValue(10 ** params.rhoLog)}, β=${params.beta.toFixed(0)}, γ=${formatDiscreteValue(params.gamma)}, k1=${(10 ** params.k1Log).toFixed(4)}, k2=${(10 ** params.k2Log).toFixed(4)}, Γ=${(10 ** params.noiseLog).toFixed(4)}, δ=${params.delta.toFixed(5)}, Tgen=${divText}`;
+    }
+
+
+    function parameterBlockLines() {
+      return [
+        ['L', params.L.toFixed(0)],
+        ['C', params.C.toFixed(1)],
+        ['ρ', formatDiscreteValue(10 ** params.rhoLog)],
+        ['β', params.beta.toFixed(0)],
+        ['γ', formatDiscreteValue(params.gamma)],
+        ['k1', (10 ** params.k1Log).toFixed(4)],
+        ['k2', (10 ** params.k2Log).toFixed(4)],
+        ['Γ', (10 ** params.noiseLog).toFixed(4)],
+        ['δ', params.delta.toFixed(5)],
+        ['Tgen', params.divisionInterval.toFixed(0)]
+      ];
+    }
+
+    function drawParameterBlock(ctx, x, y, w, h) {
+      const lines = parameterBlockLines();
+      const titleSize = EXPORT_FONT.label;
+      const bodySize = EXPORT_FONT.tick;
+      const padX = 46;
+      const topPad = 36;
+      const titleRuleGap = 58;
+      const firstRowGap = 52;
+      const labelX = x + padX;
+      const eqX = x + Math.max(280, Math.min(350, w * 0.47));
+      const valueX = eqX + 86;
+      const rightX = x + w - padX;
+      const firstRowY = y + topPad + titleSize + titleRuleGap + firstRowGap;
+      const bottomTextGuard = bodySize * 0.62;
+      const maxLineGap = lines.length > 1
+        ? (y + h - bottomTextGuard - firstRowY) / (lines.length - 1)
+        : 104;
+      const lineGap = Math.max(bodySize * 1.08, Math.min(110, maxLineGap));
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(17,24,39,0.18)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+
+      let yy = y + topPad + titleSize;
+      ctx.fillStyle = '#111827';
+      ctx.font = `bold ${titleSize}px Inter, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('Parameters', labelX, yy);
+
+      yy += titleRuleGap;
+      ctx.strokeStyle = 'rgba(17,24,39,0.14)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(labelX, yy);
+      ctx.lineTo(rightX, yy);
+      ctx.stroke();
+
+      yy += firstRowGap;
+      ctx.font = `${bodySize}px Inter, sans-serif`;
+      ctx.textBaseline = 'middle';
+      for (const [key, val] of lines) {
+        const separatorY = yy + lineGap / 2 - 8;
+
+        ctx.fillStyle = '#374151';
+        ctx.textAlign = 'left';
+        ctx.fillText(key, labelX, yy);
+
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText('=', eqX, yy);
+
+        ctx.fillStyle = '#111827';
+        ctx.fillText(val, valueX, yy);
+
+        if (separatorY < y + h - 12) {
+          ctx.strokeStyle = 'rgba(17,24,39,0.10)';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(labelX, separatorY);
+          ctx.lineTo(rightX, separatorY);
+          ctx.stroke();
+        }
+
+        yy += lineGap;
+      }
+      ctx.restore();
+    }
+
+    function makeStandaloneFigure(kind) {
+      const { plotCanvas, filename } = buildSeriesForExport(kind);
+      const padX = 48;
+      const topPad = 24;
+      const bottomPad = 42;
+      const paramGap = 42;
+      const paramW = 600;
+
+      const out = document.createElement('canvas');
+      out.width = plotCanvas.width + paramGap + paramW + 2 * padX;
+      out.height = plotCanvas.height + topPad + bottomPad;
+      const ctx = out.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, out.width, out.height);
+
+      ctx.drawImage(plotCanvas, padX, topPad);
+      drawParameterBlock(ctx, padX + plotCanvas.width + paramGap, topPad + 42, paramW, Math.max(720, plotCanvas.height - 84));
+      return { canvas: out, filename };
+    }
+
+    function makeCombinedFigure() {
+      if (!latestTrace || latestTrace.length === 0) {
+        latestTrace = [initialTracePoint()];
+      }
+
+      const trace = latestTrace;
+      const tMax = Math.max(trace[trace.length - 1].t || 1, 1);
+      const divisionMarkers = trace.filter(d => d.isDivision).map(d => ({ x: d.t }));
+
+      const sharedWidth = 2178;
+      const msHeight = 760;
+      const volHeight = 840;
+      const pairGap = 18;
+      const topMargins = { left: 300, right: 165, top: 56, bottom: 46 };
+      const bottomMargins = { left: 300, right: 165, top: 34, bottom: 180 };
+
+      const msCanvas = drawPlotToOffscreen(
+        [
+          { label: 'm', color: LIGHT_THEME.mSeries, data: trace.map(d => ({ x: d.t, y: d.m })) },
+          { label: 's', color: LIGHT_THEME.sSeries, data: trace.map(d => ({ x: d.t, y: d.s })) }
+        ],
+        {
+          xMin: 0,
+          xMax: tMax,
+          yMin: 0,
+          yMax: 1,
+          yLabel: 'm, s',
+          xLabel: '',
+          markers: divisionMarkers,
+          margins: topMargins,
+          axisOptions: {
+            hideXTickLabels: true,
+            hideXLabel: true,
+            xTickFormatter: (v) => formatTick(v, { groupThousands: true })
+          }
+        },
+        LIGHT_THEME,
+        sharedWidth,
+        msHeight,
+        EXPORT_FONT
+      );
+
+      const vMax = Math.max(...trace.map(d => d.Vol));
+      const volPad = Math.max(1e-6, 0.05 * (vMax || 1));
+      const volCanvas = drawPlotToOffscreen(
+        [
+          { label: 'Vol', color: LIGHT_THEME.volSeries, data: trace.map(d => ({ x: d.t, y: d.Vol })) }
+        ],
+        {
+          xMin: 0,
+          xMax: tMax,
+          yMin: 0,
+          yMax: vMax + volPad,
+          yLabel: 'Vol',
+          xLabel: 'time',
+          markers: divisionMarkers,
+          margins: bottomMargins,
+          axisOptions: {
+            xTickFormatter: (v) => formatTick(v, { groupThousands: true })
+          }
+        },
+        LIGHT_THEME,
+        sharedWidth,
+        volHeight,
+        EXPORT_FONT
+      );
+
+      const phase = buildSeriesForExport('phase').plotCanvas;
+
+      const pad = 48;
+      const gap = 40;
+      const titleBand = 24;
+      const paramGap = 42;
+      const paramW = 620;
+      const upperBlockH = msCanvas.height + pairGap + volCanvas.height;
+      const upperRowW = sharedWidth + paramGap + paramW;
+      const outW = Math.max(upperRowW, phase.width) + 2 * pad;
+      const outH = titleBand + upperBlockH + phase.height + 3 * gap;
+
+      const out = document.createElement('canvas');
+      out.width = outW;
+      out.height = outH;
+      const ctx = out.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+
+      let y = titleBand;
+      ctx.drawImage(msCanvas, pad, y);
+      ctx.drawImage(volCanvas, pad, y + msCanvas.height + pairGap);
+      drawParameterBlock(ctx, pad + sharedWidth + paramGap, y + 42, paramW, upperBlockH - 84);
+
+      y += upperBlockH + gap;
+      ctx.drawImage(phase, pad, y);
+
+      return { canvas: out, filename: 'nucleosome_gillespie_figures.png' };
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = filename;
+      a.click();
+    }
+
+    function exportFigure(kind) {
+      const fig = makeStandaloneFigure(kind);
+      downloadCanvas(fig.canvas, fig.filename);
+    }
+
+    function exportPNG() {
+      const fig = makeCombinedFigure();
+      downloadCanvas(fig.canvas, fig.filename);
+    }
+
+    runBtn.addEventListener('click', runSimulation);
+    startContBtn.addEventListener('click', startContinuousRun);
+    stopContBtn.addEventListener('click', stopContinuousRun);
+    resetBtn.addEventListener('click', resetTraces);
+    randomBtn.addEventListener('click', randomizeInitials);
+    exportBtn.addEventListener('click', exportCSV);
+    exportPngBtn.addEventListener('click', exportPNG);
+    exportMsBtn.addEventListener('click', () => exportFigure('ms'));
+    exportVolBtn.addEventListener('click', () => exportFigure('vol'));
+    exportPhaseBtn.addEventListener('click', () => exportFigure('phase'));
+
+    window.addEventListener('resize', () => {
+      if (latestTrace) render(latestTrace);
+      else drawPhaseDiagram();
+    });
+
+    params.noiseLog = Math.log10(0.085);
+    controlRefs.noiseLog.setBounds();
+
+    params.L = 50;
+    controlRefs.L.slider.value = params.L;
+    controlRefs.L.updateValue();
+
+    syncDeltaToCurrentL();
+
+    controlRefs.divisionInterval.setBounds();
+    resetTraces();
+
+  </script>
+</body>
+</html>
