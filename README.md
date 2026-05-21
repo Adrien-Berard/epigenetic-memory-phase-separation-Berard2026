@@ -4,6 +4,16 @@ Analysis code and interactive mean-field demo accompanying **Berard et al. (2026
 
 Simulation trajectories and scan outputs are **not stored in this repository**. Download the datasets from **Zenodo** (https://doi.org/10.5281/zenodo.16911423) and set `BERARD_DATA_ROOT` to the unpacked folder, or place files under `./data/` following the layout described on Zenodo.
 
+
+---
+### Gif of MovieS02.mp4 displaying two switches of our bistable chromatin region.
+
+
+
+<p align="center">
+  <img src="2SwitchesBistableMovieS02GIF.gif" alt="Demo GIF" width="600" />
+</p>
+
 ---
 
 ## Interactive mean-field model
