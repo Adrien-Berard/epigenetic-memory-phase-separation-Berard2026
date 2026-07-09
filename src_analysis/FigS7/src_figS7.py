@@ -1,101 +1,192 @@
 """
-src_figS7.py
+src_figS8.py
 ----------
-Supplementary Figure S7: timescale and reaction-rate analysis.
+Supplementary Figure S8: switching-polymers time series.
 """
+# src_fig.py
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+from collections import defaultdict
+import matplotlib as mpl
+import matplotlib.colors as mcolors
+from matplotlib.patches import Patch
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import string
 
-# ---------- styling () ----------
-plt.rcParams.update({
-    "font.family": "serif",
-    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
-    
-    "mathtext.fontset": "stix",  # best match to Times for equations
-    
-    "font.size": 12,
-    "axes.labelsize": 14,
-    "axes.titlesize": 14,
-    "legend.fontsize": 11,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
-})
+folders = [
+    "2polymersFullAAFullMM_Triplicate1_simBis_1e7timesteps_FullA_FullA_p2_0.00025_noise_500_swi6_400",
+    "2polymersFullAAFullMM_Triplicate1_simBis_1e7timesteps_FullM_FullM_p2_0.00025_noise_500_swi6_400",
+]
 
-# ---------- data ----------
-dt      = 0.001
-N       = 80
-k2 = 2.5e-4 / dt
-k1 = 1e-4 / dt
-
-monomers = np.arange(1, N+1)
-
-flory_A = 0.59
-flory_M = 1/3
-
-reaction_rates_zone = np.array([1/k1, 1/k2])
-
-rouse_time = monomers**2 / (3*np.pi**2)
-rouse_A_flory = monomers**(1 + 2*flory_A) / (3*np.pi**2)
-rouse_M_flory = monomers**(1 + 2*flory_M) / (3*np.pi**2)
-
-# ---------- colorblind-safe palette (Okabe–Ito) ----------
-colors = {
-    "ideal": "#6A3D9A",   # purple
-    "floryA": "#0072B2",  # blue
-    "floryM": "#D55E00",  # vermillion
-    "zone":  "#E69F00",   # orange
-    "h1":    "#009E73",   # green
-    "h2":    "#CC79A7"    # pink (adjusted)
+PRX_RC = {
+    "font.family":        "serif",
+    "font.size":          1,   # 8 × 1.4
+    "axes.labelsize":     10,   # 9 × 1.4
+    "axes.titlesize":     9,   # 8 × 1.4
+    "xtick.labelsize":    9,   # 8 × 1.4
+    "ytick.labelsize":    9,   # 8 × 1.4
+    "legend.fontsize":    9,    # 7 × 1.4
+    "legend.framealpha":  0.85,
+    "legend.edgecolor":   "0.7",
+    "axes.linewidth":     0.8,
+    "xtick.major.width":  0.8,
+    "ytick.major.width":  0.8,
+    "xtick.minor.width":  0.5,
+    "ytick.minor.width":  0.5,
+    "xtick.direction":    "in",
+    "ytick.direction":    "in",
+    "xtick.top":          True,
+    "ytick.right":        True,
+    "lines.linewidth":    1.2,
+    "figure.dpi":         500,
+    "savefig.dpi":        500,
+    "savefig.bbox":       "tight",
 }
 
-# ---------- figure ----------
-fig, ax = plt.subplots(figsize=(6.5, 4.5))
+mpl.rcParams.update(PRX_RC)
 
-# main curves
-ax.plot(monomers, rouse_time,
-        label="Rouse (ideal)",
-        color=colors["ideal"], lw=2)
+# Mapping of type numbers to labels/colors
+type_map_i = {
+    1: ("A", "#277CD1"),
+    2: ("U", "#F8CB17"),
+    3: ("M", "#FD1D3B"),
+}
 
-ax.plot(monomers, rouse_A_flory,
-        label=r"Self-avoiding ($\nu=0.59$)",
-        color=colors["floryA"], lw=2)
+type_map_ii = {
+    1: ("A", "#194D81"),
+    2: ("U", "#B38F02"),
+    3: ("M", "#9E0318"),
+}
 
-ax.plot(monomers, rouse_M_flory,
-        label=r"Collapsed ($\nu=1/3$)",
-        color=colors["floryM"], lw=2)
+TYPE_COLORS = {
+    1: "#2166AC",   # A  — blue
+    2: "#F4C300",   # U  — yellow
+    3: "#D6001C",   # M  — red
+    4: "#194D81",
+    5: "#B38F02",
+    6: "#9E0318",
+}
 
-# reaction zone
-ax.fill_between(monomers,
-                reaction_rates_zone[0],
-                reaction_rates_zone[1],
-                color=colors["zone"],
-                alpha=0.25,
-                label=r"Reaction rates window ($1/k_1$ to $1/k_2$)")
+TYPE_LABELS = {1: "A-I", 2: "U-I", 3: "M-I",4:'A-II',5:'U-II',6:'M-II'}
 
-# reference times
-ax.axhline(0.5, color=colors["h1"], ls="--", lw=1.5, alpha=0.7,
-           label=r"Noisy conversion time ($1/\Gamma$)")
+TYPE_CMAP   = mcolors.ListedColormap([TYPE_COLORS[k] for k in sorted(TYPE_COLORS)])
 
-ax.axhline(0.2, color=colors["h2"], ls="--", lw=1.5, alpha=0.7,
-           label=r"Swi6$^*$ lifetime ($\delta(t-0.2))$")
+def _label_panel(ax, idx, x=-0.18, y=1.05): #x=-0.12 before
+    """ panel label slightly outside top-left of axes."""
+    label = f"({string.ascii_lowercase[idx]})"
+    ax.text(
+        x, y, label,
+        transform=ax.transAxes,
+        fontsize=10,
+        va="bottom",
+        ha="left",
+        clip_on=False,
+        zorder=10,
+    )
 
-# scales
-ax.set_xscale("log")
-ax.set_yscale("log")
+def read_timeseries(filepath):
 
-ax.set_xlim(1, N)
+    timesteps = []
+    data = defaultdict(list)
 
-# labels
-ax.set_xlabel("Number of monomers $N$")
-ax.set_ylabel(r"Time ($\tau_{\mathrm{LJ}}$)")
+    with open(filepath, "r") as f:
+        lines = f.readlines()
 
-# legend (clean PRX style)
-ax.legend(frameon=False, loc="upper left")
+    i = 0
+    while i < len(lines):
 
-# layout
-fig.tight_layout()
+        if lines[i].startswith("ITEM: TIMESTEP"):
 
-# save as vector PDF (PRX standard)
-plt.savefig("timescale_analysis.pdf", format="pdf", bbox_inches="tight")
+            timestep = int(lines[i + 1].strip())
+            timesteps.append(timestep)
 
-plt.show()
+            while not lines[i].startswith("ITEM: ATOMS"):
+                i += 1
+
+            i += 1
+
+            while i < len(lines) and not lines[i].startswith("ITEM:"):
+                atom_id, atom_type = map(int, lines[i].split())
+
+                data[atom_id].append(atom_type)
+
+                i += 1
+
+            continue
+
+        i += 1
+
+    return np.array(timesteps), data
+
+
+fig, axes = plt.subplots(
+    2, 2,
+    figsize=(7.5, 4),
+    sharex=True,
+    sharey=True
+)
+
+for col, folder in enumerate(folders):
+    
+
+    filepath = os.path.join(folder, "id_and_type.dat")
+    timesteps, data = read_timeseries(filepath)
+
+    groups = [
+        range(1, 81),
+        range(81, 161)
+    ]
+
+    for row, ids_group in enumerate(groups):
+
+        ax = axes[row, col]
+        if row==1:
+            type_map=type_map_ii
+        else:
+            type_map=type_map_i
+        for tval, (label, color) in type_map.items():
+
+            counts = []
+
+            for frame in range(len(timesteps)):
+
+                c = 0
+
+                for atom_id in ids_group:
+                    if data[atom_id][frame] == tval:
+                        c += 1
+
+                counts.append(c)
+
+            ax.plot(
+                timesteps[::50],
+                counts[::50],
+                color=color,
+                label=label
+            )
+            ax.set_xticks([0,0.5e8,1e8])
+            ax.set_yticks([0,40,80])
+            ax.grid(alpha=0.2)
+        if row == 1:
+            ax.set_xlabel(r"Time ($\tau_{\mathrm{LJ}}$)")
+            ax.set_xticklabels([0,0.5,rf'$1 \times 10^5$'])
+        if col==0:
+            if row==0:
+                ax.set_ylabel("Polymer I\nCount\nnucleosomal type")
+            else:
+                ax.set_ylabel("Polymer II\nCount\nnucleosomal type")
+            ax.set_yticklabels([0,40,80])
+        if row==1 and col==0:
+            type_handles = [
+                Patch(color=TYPE_COLORS[k],  label=TYPE_LABELS[k])
+                for k in sorted(TYPE_COLORS)
+            ]
+            ax.legend(handles=type_handles,ncol=2,loc='center left')
+        if row==0:
+            if col==0:
+                _label_panel(ax,col)
+            else:
+                _label_panel(ax,col, x=-0.08)
+plt.tight_layout()
+plt.savefig('supp2switching_polymers.pdf',dpi = 500)

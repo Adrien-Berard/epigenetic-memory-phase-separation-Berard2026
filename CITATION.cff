@@ -1,0 +1,80 @@
+cff-version: 1.2.0
+title: "Epigenetic memory achieved through chromatin-induced phase separation"
+message: >-
+  If you use this software, please cite the PRX Life article and the Zenodo
+  dataset (simulation trajectories and scan outputs).
+type: software
+authors:
+  - family-names: Berard
+    given-names: Adrien
+    orcid: https://orcid.org/0009-0008-7038-3090
+    affiliation: University of Copenhagen
+  - family-names: Gissinger
+    given-names: Jacob
+    orcid: https://orcid.org/0000-0003-0031-044X
+  - family-names: Sneppen
+    given-names: Kim
+    orcid: https://orcid.org/0000-0001-9820-3567
+    affiliation: University of Copenhagen
+  - family-names: Thon
+    given-names: Genevieve
+    orcid: https://orcid.org/0000-0001-8550-5945
+    affiliation: University of Copenhagen
+repository-code: https://github.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026
+url: https://github.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026
+doi: 10.5281/zenodo.16911423
+license: MIT
+version: 1.0.2
+date-released: 2026-06-19
+abstract: >-
+  Analysis code and interactive mean-field demo accompanying Berard et al.
+  (PRX Life, 2026). Simulation trajectories and scan outputs are hosted on
+  Zenodo; set BERARD_DATA_ROOT to the unpacked archive or use ./data/.
+keywords:
+  - epigenetics
+  - chromatin
+  - phase separation
+  - LAMMPS
+  - mean-field model
+references:
+  - type: article
+    authors:
+      - family-names: Berard
+        given-names: Adrien
+      - family-names: Gissinger
+        given-names: Jacob
+      - family-names: Sneppen
+        given-names: Kim
+      - family-names: Thon
+        given-names: Genevieve
+    title: Epigenetic memory achieved through chromatin-induced phase separation
+    journal: PRX Life
+    issn: 2835-8279
+    year: 2026
+    date-published: 2026-07-08
+    doi: 10.1103/pbvj-gj48
+    url: https://doi.org/10.1103/pbvj-gj48
+  - type: dataset
+    authors:
+      - family-names: Berard
+        given-names: Adrien
+        orcid: https://orcid.org/0009-0008-7038-3090
+        affiliation: University of Copenhagen
+      - family-names: Gissinger
+        given-names: Jacob
+        orcid: https://orcid.org/0000-0003-0031-044X
+      - family-names: Sneppen
+        given-names: Kim
+        orcid: https://orcid.org/0000-0001-9820-3567
+        affiliation: University of Copenhagen
+      - family-names: Thon
+        given-names: Genevieve
+        orcid: https://orcid.org/0000-0001-8550-5945
+        affiliation: University of Copenhagen
+    title: Epigenetic memory achieved through chromatin-induced phase separation
+    year: 2026
+    date-released: 2026-06-19
+    version: 1.0.2
+    doi: 10.5281/zenodo.16911423
+    url: https://doi.org/10.5281/zenodo.16911423
+    license: CC-BY-4.0
