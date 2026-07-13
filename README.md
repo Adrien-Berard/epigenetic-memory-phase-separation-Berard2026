@@ -8,15 +8,14 @@ Simulation trajectories and scan outputs are **not stored in this repository**. 
 
 ### Gif of MovieS02.mp4 displaying two switches of our bistable chromatin region.
 
-
+<img src="https://github.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026/blob/main/gifs/2SwitchesBistableMovieS02GIF.gif"  width="500"/>
 
 ---
 
 
-
 ### Gif of MovieS12.mp4 displaying long chromatin with 3 nucleation centers during several cell cycles.
 
-
+<img src="https://github.com/Adrien-Berard/epigenetic-memory-phase-separation-Berard2026/blob/main/gifs/MovieS12-3nucEpe1CellCycle.gif"  width="500"/>
 
 ---
 
